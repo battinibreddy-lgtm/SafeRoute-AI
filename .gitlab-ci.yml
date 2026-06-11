@@ -1,4 +1,4 @@
 test:
   image: alpine
   script:
-    - echo "CI IS WORKING"
+    - echo "HELLO CI WORKS"
