@@ -4,16 +4,17 @@ stages:
   - type_check
   - test
   - coverage
+  - security
 
 image: python:3.12
 
 before_script:
   - python -V
   - pip install --upgrade pip
-  - pip install ruff mypy pytest pytest-cov
+  - pip install ruff mypy pytest pytest-cov pip-audit
 
 # -----------------------
-# LINT (ruff check)
+# LINT
 # -----------------------
 lint:
   stage: lint
@@ -21,7 +22,7 @@ lint:
     - ruff check .
 
 # -----------------------
-# FORMAT CHECK (no auto fix)
+# FORMAT CHECK
 # -----------------------
 format:
   stage: format
@@ -29,7 +30,7 @@ format:
     - ruff format --check .
 
 # -----------------------
-# TYPE CHECK (mypy)
+# TYPE CHECK
 # -----------------------
 type_check:
   stage: type_check
@@ -37,7 +38,7 @@ type_check:
     - mypy .
 
 # -----------------------
-# TESTS (pytest)
+# TESTS
 # -----------------------
 test:
   stage: test
@@ -51,3 +52,11 @@ coverage:
   stage: coverage
   script:
     - pytest --cov=. --cov-report=term --cov-fail-under=80
+
+# -----------------------
+# DEPENDENCY SECURITY AUDIT
+# -----------------------
+dependency_audit:
+  stage: security
+  script:
+    - pip-audit
