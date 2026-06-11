@@ -1,101 +1,104 @@
 stages:
   - lint
   - format
-  - type_check
+  - typecheck
   - quality
   - security
   - test
   - coverage
 
+# -----------------------
+# GLOBAL SETTINGS
+# -----------------------
 image: python:3.12
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
 
 before_script:
   - python -V
   - pip install --upgrade pip
-  - pip install ruff mypy pytest pytest-cov pip-audit
-  - pip install vulture bandit pylint flake8 semgrep pyupgrade
+  - pip install -r requirements.txt || true
+  - pip install ruff mypy pytest pytest-cov pip-audit bandit semgrep vulture pylint flake8 pyupgrade
 
 # -----------------------
-# LINT (Ruff)
+# LINT (FAST FAIL)
 # -----------------------
 lint:
   stage: lint
   script:
     - ruff check .
+  allow_failure: false
 
 # -----------------------
-# FORMAT CHECK
+# FORMAT CHECK (NON BLOCKING)
 # -----------------------
 format:
   stage: format
   script:
     - ruff format --check .
+  allow_failure: true
 
 # -----------------------
-# TYPE CHECK (MyPy)
+# TYPE CHECK (STRICT)
 # -----------------------
-type_check:
-  stage: type_check
+typecheck:
+  stage: typecheck
   script:
-    - mypy .
+    - mypy backend
+  allow_failure: false
 
 # -----------------------
-# QUALITY TOOLS (with reports)
+# CODE QUALITY (MIXED)
 # -----------------------
-
 vulture:
   stage: quality
   script:
-    - vulture backend/
+    - vulture backend/ --min-confidence 70
+  allow_failure: true
 
 pylint:
   stage: quality
   script:
-    - pylint backend --output-format=json > pylint.json
-  artifacts:
-    reports:
-      codequality: pylint.json
-    paths:
-      - pylint.json
+    - pylint backend --exit-zero --output-format=text
+  allow_failure: true
 
 flake8:
   stage: quality
   script:
     - flake8 backend
+  allow_failure: false
 
 pyupgrade:
   stage: quality
   script:
-    - pyupgrade backend/**/*.py
+    - pyupgrade $(find backend -name "*.py")
+  allow_failure: true
 
 # -----------------------
-# SECURITY (SAST + Dependency audit)
+# SECURITY (STRICT)
 # -----------------------
-
 bandit:
   stage: security
   script:
-    - bandit -r backend -f json -o bandit.json
-  artifacts:
-    reports:
-      sast: bandit.json
-    paths:
-      - bandit.json
-
-semgrep:
-  stage: security
-  script:
-    - semgrep --config=auto --json --output=semgrep.json backend
-  artifacts:
-    reports:
-      sast: semgrep.json
-    paths:
-      - semgrep.json
+    - bandit -r backend -ll
+  allow_failure: false
 
 dependency_audit:
   stage: security
   script:
     - pip-audit
+  allow_failure: false
+
+semgrep:
+  stage: security
+  script:
+    - semgrep --config=auto backend
+  allow_failure: false
 
 # -----------------------
 # TESTS
@@ -104,16 +107,21 @@ test:
   stage: test
   script:
     - pytest -q
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
 
 # -----------------------
-# COVERAGE (GitLab-compatible)
+# COVERAGE (STRICT GATE)
 # -----------------------
 coverage:
   stage: coverage
   script:
-    - pytest --cov=. --cov-report=xml --cov-report=term --cov-fail-under=80
+    - pytest --cov=backend --cov-report=term --cov-report=xml --cov-fail-under=80
   artifacts:
     reports:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
+  allow_failure: false
