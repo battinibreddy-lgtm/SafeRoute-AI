@@ -1,0 +1,25 @@
+# Python
+venv/
+.venv/
+backend/venv/
+__pycache__/
+*.pyc
+
+# Next.js
+.next/
+node_modules/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Models
+*.pkl
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
