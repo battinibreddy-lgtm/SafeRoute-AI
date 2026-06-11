@@ -1,8 +1,8 @@
 stages:
-  - audit
+  - test
 
-audit:
-  stage: audit
+test:
+  stage: test
   script:
-    - pip install pip-audit
-    - pip-audit || true
+    - pip install pytest pytest-cov
+    - pytest --cov=backend tests/
