@@ -1,7 +1,6 @@
 import pandas as pd
 import sqlite3
 import joblib
-import numpy as np
 
 from xgboost import XGBRegressor
 from sklearn.model_selection import train_test_split
@@ -28,10 +27,7 @@ y = accidents["severity"] * 20
 # Train/Test Split
 # -----------------------------
 X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=42
+    X, y, test_size=0.2, random_state=42
 )
 
 # -----------------------------
@@ -43,7 +39,7 @@ model = XGBRegressor(
     max_depth=5,
     subsample=0.8,
     colsample_bytree=0.8,
-    random_state=42
+    random_state=42,
 )
 
 # -----------------------------

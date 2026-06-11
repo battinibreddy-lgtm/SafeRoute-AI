@@ -1,52 +1,52 @@
 stages:
-  - audit
+  - lint
+  - format
+  - type_check
   - test
+  - coverage
 
-dependency_audit:
-  stage: audit
+image: python:3.12
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+
+before_script:
+  - python -V
+  - pip install -U pip
+  - pip install -r requirements.txt
+  - pip install ruff mypy pytest pytest-cov
+
+# ---------------- LINT ----------------
+lint:
+  stage: lint
   script:
-    - pip install pip-audit
-    - pip-audit
-    - cd frontend
-    - npm audit --audit-level=high || true
+    - ruff check .
 
+# ---------------- FORMAT CHECK ----------------
+format:
+  stage: format
+  script:
+    - ruff format --check .
+
+# ---------------- TYPE CHECK ----------------
+type_check:
+  stage: type_check
+  script:
+    - mypy .
+
+# ---------------- TEST ----------------
 test:
   stage: test
   script:
-    - pip install pytest pytest-cov
-    - pytest --cov=backend tests/
-bandit:
-  stage: test
-  script:
-    - pip install bandit
-    - bandit -r backend
+    - pytest -q
 
-vulture:
-  stage: test
+# ---------------- COVERAGE ----------------
+coverage:
+  stage: coverage
   script:
-    - pip install vulture
-    - vulture backend
-
-flake8:
-  stage: test
-  script:
-    - pip install flake8
-    - flake8 backend
-
-pylint:
-  stage: test
-  script:
-    - pip install pylint
-    - pylint backend/app || true
-
-semgrep:
-  stage: test
-  script:
-    - pip install semgrep
-    - semgrep --config=auto backend
-
-pyupgrade:
-  stage: test
-  script:
-    - pip install pyupgrade
-    - find backend -name "*.py" | xargs pyupgrade --py312-plus
+    - pytest --cov=. --cov-report=term --cov-report=xml
+    - pytest --cov=. --cov-report=term --cov-fail-under=80

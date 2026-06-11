@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class PredictRequest(BaseModel):
     latitude: float
     longitude: float

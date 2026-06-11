@@ -20,14 +20,18 @@ def predict_risk(data):
 
     encoded = encode_features(data)
 
-    features = np.array([[
-        encoded["latitude"],
-        encoded["longitude"],
-        encoded["severity"],
-        encoded["weather"],
-        encoded["road_type"],
-        encoded["time_of_day"]
-    ]])
+    features = np.array(
+        [
+            [
+                encoded["latitude"],
+                encoded["longitude"],
+                encoded["severity"],
+                encoded["weather"],
+                encoded["road_type"],
+                encoded["time_of_day"],
+            ]
+        ]
+    )
 
     prediction = model.predict(features)[0]
 

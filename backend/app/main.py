@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
 import numpy as np
 import joblib
@@ -9,10 +9,7 @@ import os
 # ---------------------------
 # App setup
 # ---------------------------
-app = FastAPI(
-    title="SafeRoute AI",
-    version="0.1.0"
-)
+app = FastAPI(title="SafeRoute AI", version="0.1.0")
 
 # ---------------------------
 # CORS (React frontend)
@@ -37,12 +34,14 @@ if os.path.exists(MODEL_PATH):
 else:
     print("⚠️ Model not found, using fallback logic")
 
+
 # ---------------------------
 # Request schema
 # ---------------------------
 class PredictRequest(BaseModel):
     latitude: float
     longitude: float
+
 
 # ---------------------------
 # DB helper
@@ -52,6 +51,7 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+
 # ---------------------------
 # Root
 # ---------------------------
@@ -59,12 +59,14 @@ def get_db_connection():
 def root():
     return {"message": "SafeRoute AI running"}
 
+
 # ---------------------------
 # Health check
 # ---------------------------
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
 
 # ---------------------------
 # Blackspots API
@@ -85,54 +87,61 @@ def get_blackspots():
             "latitude": row["latitude"],
             "longitude": row["longitude"],
             "risk_score": row["risk_score"],
-            "accident_count": row["accident_count"]
+            "accident_count": row["accident_count"],
         }
         for row in rows
     ]
+
 
 # ---------------------------
 # ML Prediction endpoint
 # ---------------------------
 @app.post("/predict")
 def predict(data: PredictRequest):
+    global model
+
     lat = data.latitude
     lon = data.longitude
 
     features = np.array([[lat, lon]])
+
+    # ✅ SAFE GUARD (THIS FIXES MYPY ERROR)
+    if model is None:
+        raise RuntimeError("ML model is not loaded")
+
     risk_score = float(model.predict(features)[0])
 
-    # -----------------------------
-    # IMPORTANT: ADD REASONS BACK
-    # -----------------------------
     if risk_score < 40:
         level = "LOW 🟢"
         reasons = [
             "Low accident density nearby",
             "Stable road conditions",
-            "Normal traffic flow"
+            "Normal traffic flow",
         ]
     elif risk_score < 70:
         level = "MEDIUM 🟡"
         reasons = [
             "Moderate accident history",
             "Occasional congestion",
-            "Some risky intersections nearby"
+            "Some risky intersections nearby",
         ]
     else:
         level = "HIGH 🔴"
         reasons = [
             "Frequent accidents recorded",
             "High traffic density zone",
-            "Dangerous road geometry or junction"
+            "Dangerous road geometry or junction",
         ]
 
     return {
         "risk_score": risk_score,
         "risk_level": level,
-        "reasons": reasons,   # ✅ THIS WAS MISSING
+        "reasons": reasons,
         "latitude": lat,
-        "longitude": lon
+        "longitude": lon,
     }
+
+
 # ---------------------------
 # OPTIONAL: nearest blackspot (backend version)
 # (You are currently doing this in frontend, so optional)
@@ -150,8 +159,7 @@ def nearest_blackspot(lat: float, lon: float):
         return {"error": "No data"}
 
     nearest = min(
-        rows,
-        key=lambda row: abs(row["latitude"] - lat) + abs(row["longitude"] - lon)
+        rows, key=lambda row: abs(row["latitude"] - lat) + abs(row["longitude"] - lon)
     )
 
     return {
@@ -160,9 +168,9 @@ def nearest_blackspot(lat: float, lon: float):
         "latitude": nearest["latitude"],
         "longitude": nearest["longitude"],
         "risk_score": nearest["risk_score"],
-        "accident_count": nearest["accident_count"]
+        "accident_count": nearest["accident_count"],
     }
-from pydantic import BaseModel
+
 
 class RouteRequest(BaseModel):
     start_lat: float
@@ -189,7 +197,4 @@ def safest_route(data: RouteRequest):
 
     risk_score = sum(risk(p["lat"], p["lon"]) for p in path)
 
-    return {
-        "path": path,
-        "risk_score": risk_score
-    }
+    return {"path": path, "risk_score": risk_score}

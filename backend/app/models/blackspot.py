@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, Float, String
 from app.database.database import Base
 
+
 class Blackspot(Base):
     __tablename__ = "blackspots"
 

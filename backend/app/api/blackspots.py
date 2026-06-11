@@ -6,6 +6,7 @@ from app.models.blackspot import Blackspot
 
 router = APIRouter()
 
+
 @router.get("/blackspots")
 def get_blackspots(db: Session = Depends(get_db)):
     data = db.query(Blackspot).all()
@@ -17,7 +18,7 @@ def get_blackspots(db: Session = Depends(get_db)):
             "latitude": b.latitude,
             "longitude": b.longitude,
             "risk_score": b.risk_score,
-            "accident_count": b.accident_count
+            "accident_count": b.accident_count,
         }
         for b in data
     ]
