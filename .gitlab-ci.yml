@@ -1,5 +1,14 @@
 stages:
+  - audit
   - test
+
+dependency_audit:
+  stage: audit
+  script:
+    - pip install pip-audit
+    - pip-audit
+    - cd frontend
+    - npm audit --audit-level=high || true
 
 test:
   stage: test
