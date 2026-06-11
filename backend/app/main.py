@@ -141,7 +141,6 @@ def predict(data: PredictRequest):
         "longitude": lon,
     }
 
-
 # ---------------------------
 # OPTIONAL: nearest blackspot (backend version)
 # (You are currently doing this in frontend, so optional)

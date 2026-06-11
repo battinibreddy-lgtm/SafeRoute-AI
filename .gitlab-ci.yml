@@ -7,46 +7,37 @@ stages:
 
 image: python:3.12
 
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-
-cache:
-  paths:
-    - .cache/pip
-
 before_script:
-  - python -V
   - pip install -U pip
   - pip install -r requirements.txt
   - pip install ruff mypy pytest pytest-cov
 
-# ---------------- LINT ----------------
 lint:
   stage: lint
+  tags: []
   script:
     - ruff check .
 
-# ---------------- FORMAT CHECK ----------------
 format:
   stage: format
+  tags: []
   script:
     - ruff format --check .
 
-# ---------------- TYPE CHECK ----------------
 type_check:
   stage: type_check
+  tags: []
   script:
     - mypy .
 
-# ---------------- TEST ----------------
 test:
   stage: test
+  tags: []
   script:
     - pytest -q
 
-# ---------------- COVERAGE ----------------
 coverage:
   stage: coverage
+  tags: []
   script:
-    - pytest --cov=. --cov-report=term --cov-report=xml
     - pytest --cov=. --cov-report=term --cov-fail-under=80
