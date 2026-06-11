@@ -1,0 +1,8 @@
+stages:
+  - audit
+
+audit:
+  stage: audit
+  script:
+    - pip install pip-audit
+    - pip-audit || true
