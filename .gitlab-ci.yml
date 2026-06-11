@@ -1,4 +1,53 @@
-test:
-  image: alpine
+stages:
+  - lint
+  - format
+  - type_check
+  - test
+  - coverage
+
+image: python:3.12
+
+before_script:
+  - python -V
+  - pip install --upgrade pip
+  - pip install ruff mypy pytest pytest-cov
+
+# -----------------------
+# LINT (ruff check)
+# -----------------------
+lint:
+  stage: lint
   script:
-    - echo "HELLO CI WORKS"
+    - ruff check .
+
+# -----------------------
+# FORMAT CHECK (no auto fix)
+# -----------------------
+format:
+  stage: format
+  script:
+    - ruff format --check .
+
+# -----------------------
+# TYPE CHECK (mypy)
+# -----------------------
+type_check:
+  stage: type_check
+  script:
+    - mypy .
+
+# -----------------------
+# TESTS (pytest)
+# -----------------------
+test:
+  stage: test
+  script:
+    - pytest -q
+
+# -----------------------
+# COVERAGE GATE
+# -----------------------
+coverage:
+  stage: coverage
+  script:
+    - pytest --cov=. --cov-report=term --cov-fail-under=80
