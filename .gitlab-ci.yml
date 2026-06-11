@@ -15,3 +15,38 @@ test:
   script:
     - pip install pytest pytest-cov
     - pytest --cov=backend tests/
+bandit:
+  stage: test
+  script:
+    - pip install bandit
+    - bandit -r backend
+
+vulture:
+  stage: test
+  script:
+    - pip install vulture
+    - vulture backend
+
+flake8:
+  stage: test
+  script:
+    - pip install flake8
+    - flake8 backend
+
+pylint:
+  stage: test
+  script:
+    - pip install pylint
+    - pylint backend/app || true
+
+semgrep:
+  stage: test
+  script:
+    - pip install semgrep
+    - semgrep --config=auto backend
+
+pyupgrade:
+  stage: test
+  script:
+    - pip install pyupgrade
+    - find backend -name "*.py" | xargs pyupgrade --py312-plus
