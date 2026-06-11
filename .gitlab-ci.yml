@@ -1,11 +1,11 @@
+image: python:3.12
+
 stages:
   - lint
   - format
   - type_check
   - test
   - coverage
-
-image: python:3.12
 
 before_script:
   - pip install -U pip
@@ -14,30 +14,25 @@ before_script:
 
 lint:
   stage: lint
-  tags: []
   script:
     - ruff check .
 
 format:
   stage: format
-  tags: []
   script:
     - ruff format --check .
 
 type_check:
   stage: type_check
-  tags: []
   script:
     - mypy .
 
 test:
   stage: test
-  tags: []
   script:
     - pytest -q
 
 coverage:
   stage: coverage
-  tags: []
   script:
     - pytest --cov=. --cov-report=term --cov-fail-under=80
