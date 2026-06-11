@@ -21,4 +21,3 @@ AI-powered road safety and route risk analysis platform.
 - Route risk prediction
 - Interactive maps
 - Safe route planning
-

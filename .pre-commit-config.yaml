@@ -1,10 +1,38 @@
 repos:
+  # -------------------------
+  # BASIC FILE CLEANUP
+  # -------------------------
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: detect-private-key
 
+  # -------------------------
+  # LINT + FORMAT (Ruff = modern standard)
+  # -------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # -------------------------
+  # TYPE CHECKING
+  # -------------------------
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-requests]
+
+  # -------------------------
+  # SECURITY CHECKS
+  # -------------------------
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:

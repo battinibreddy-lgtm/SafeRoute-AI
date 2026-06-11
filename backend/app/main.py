@@ -141,6 +141,7 @@ def predict(data: PredictRequest):
         "longitude": lon,
     }
 
+
 # ---------------------------
 # OPTIONAL: nearest blackspot (backend version)
 # (You are currently doing this in frontend, so optional)
@@ -180,7 +181,6 @@ class RouteRequest(BaseModel):
 
 @app.post("/safest-route")
 def safest_route(data: RouteRequest):
-
     def risk(lat, lon):
         return abs(lat) + abs(lon)
 
