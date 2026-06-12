@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useI18n } from "../i18n/provider";
+import { API_BASE_URL } from "../src/lib/api";
 
 const MapView = dynamic(() => import("../components/MapView"), {
   ssr: false,
@@ -47,7 +48,7 @@ export default function Home() {
       const startCoord = await geocodeLocation(start);
       const endCoord = await geocodeLocation(end);
 
-      const res = await fetch("http://127.0.0.1:8000/safest-route", {
+      const res = await fetch(`${API_BASE_URL}/safest-route`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

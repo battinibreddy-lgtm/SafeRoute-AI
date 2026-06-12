@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: saferoute-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: SQLITE_DB_PATH
+        value: saferoute.db
+      - key: MODEL_PATH
+        value: ml/model.pkl
+      - key: CORS_ORIGINS
+        sync: false

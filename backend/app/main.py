@@ -1,12 +1,22 @@
+from fastapi.middleware.cors import CORSMiddleware
+import math
+import os
+import sqlite3
+
+import joblib
+import numpy as np
+import requests
 from fastapi import FastAPI
 from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
-import sqlite3
-import numpy as np
-import joblib
-import os
-import math
-import requests
+
+
+def parse_cors_origins():
+    origins = os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000",
+    )
+    return [origin.strip() for origin in origins.split(",") if origin.strip()]
+
 
 # ---------------------------
 # App setup
@@ -18,7 +28,7 @@ app = FastAPI(title="SafeRoute AI", version="0.2.1")
 # ---------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=parse_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,7 +37,7 @@ app.add_middleware(
 # ---------------------------
 # Load ML model
 # ---------------------------
-MODEL_PATH = "ml/model.pkl"
+MODEL_PATH = os.getenv("MODEL_PATH", "ml/model.pkl")
 
 model = None
 if os.path.exists(MODEL_PATH):
@@ -56,7 +66,7 @@ class RouteRequest(BaseModel):
 # DB connection
 # ---------------------------
 def get_db_connection():
-    conn = sqlite3.connect("saferoute.db")
+    conn = sqlite3.connect(os.getenv("SQLITE_DB_PATH", "saferoute.db"))
     conn.row_factory = sqlite3.Row
     return conn
 

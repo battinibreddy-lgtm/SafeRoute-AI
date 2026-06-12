@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useI18n } from "../i18n/provider";
 import "leaflet/dist/leaflet.css";
 import { Polyline } from "react-leaflet";
+import { API_BASE_URL } from "../src/lib/api";
 
 import {
   MapContainer,
@@ -13,6 +14,12 @@ import {
   useMapEvents,
   useMap,
 } from "react-leaflet";
+
+const LeafletMapContainer = MapContainer as any;
+const LeafletTileLayer = TileLayer as any;
+const LeafletMarker = Marker as any;
+const LeafletPopup = Popup as any;
+const LeafletPolyline = Polyline as any;
 
 // -----------------------------
 // BLACKSPOT / AI ICON
@@ -61,7 +68,7 @@ const getRouteIcon = (emoji: string) => {
 // -----------------------------
 function MapClickHandler({ onClick }: any) {
   useMapEvents({
-    click(e) {
+    click(e: { latlng: { lat: number; lng: number } }) {
       onClick(e.latlng);
     },
   });
@@ -110,7 +117,7 @@ export default function LeafletMap({
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/blackspots");
+        const res = await fetch(`${API_BASE_URL}/blackspots`);
         const data = await res.json();
 
         setSpots(Array.isArray(data) ? data : data.blackspots || []);
@@ -127,7 +134,7 @@ export default function LeafletMap({
   // -----------------------------
   const handleMapClick = async (latlng: any) => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/predict", {
+      const res = await fetch(`${API_BASE_URL}/predict`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -152,7 +159,7 @@ export default function LeafletMap({
   };
 
   return (
-    <MapContainer
+    <LeafletMapContainer
       center={[17.385, 78.486]}
       zoom={13}
       style={{ height: "100vh", width: "100%" }}
@@ -161,14 +168,14 @@ export default function LeafletMap({
       <RouteFit route={route} />
 
       {/* TILE LAYER */}
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <LeafletTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
       {/* MAP CLICK AI */}
       <MapClickHandler onClick={handleMapClick} />
 
       {/* BLACKSPOTS */}
       {spots.map((spot) => (
-        <Marker
+        <LeafletMarker
           key={spot.id}
           position={[
             Number(spot.latitude),
@@ -176,26 +183,26 @@ export default function LeafletMap({
           ]}
           icon={getRiskIcon("MEDIUM")}
         >
-          <Popup>
+          <LeafletPopup>
             <b>{spot.name}</b>
             <br />
             {t("risk_score")}: {spot.risk_score}
             <br />
             {t("accidents")}: {spot.accident_count}
-          </Popup>
-        </Marker>
+          </LeafletPopup>
+        </LeafletMarker>
       ))}
 
       {/* AI RISK MARKER */}
       {selectedRisk && (
-        <Marker
+        <LeafletMarker
           position={[
             selectedRisk.latlng.lat,
             selectedRisk.latlng.lng,
           ]}
           icon={getRiskIcon(selectedRisk.risk_level)}
         >
-          <Popup>
+          <LeafletPopup>
             <b>{t("ai_risk_analysis")}</b>
             <br />
             {t("score")}: {selectedRisk.risk_score}
@@ -213,47 +220,47 @@ export default function LeafletMap({
                 )
               )}
             </ul>
-          </Popup>
-        </Marker>
+          </LeafletPopup>
+        </LeafletMarker>
       )}
 
       {/* START MARKER */}
       {route.length > 0 && (
-        <Marker
+        <LeafletMarker
           position={[
             Number(route[0].lat),
             Number(route[0].lon),
           ]}
           icon={getRouteIcon("🟢")}
         >
-          <Popup>
+          <LeafletPopup>
             <b>{t("start")} (A)</b>
             <br />
             {startName || t("starting_point")}
-          </Popup>
-        </Marker>
+          </LeafletPopup>
+        </LeafletMarker>
       )}
 
       {/* DESTINATION MARKER */}
       {route.length > 0 && (
-        <Marker
+        <LeafletMarker
           position={[
             Number(route[route.length - 1].lat),
             Number(route[route.length - 1].lon),
           ]}
           icon={getRouteIcon("🔴")}
         >
-          <Popup>
+          <LeafletPopup>
             <b>{t("destination")} (B)</b>
             <br />
             {endName || t("destination")}
-          </Popup>
-        </Marker>
+          </LeafletPopup>
+        </LeafletMarker>
       )}
 
       {/* ROUTE LINE */}
       {route.length > 0 && (
-        <Polyline
+        <LeafletPolyline
           positions={route.map((p: any) => [
             Number(p.lat),
             Number(p.lon),
@@ -262,6 +269,6 @@ export default function LeafletMap({
           weight={6}
         />
       )}
-    </MapContainer>
+    </LeafletMapContainer>
   );
 }
