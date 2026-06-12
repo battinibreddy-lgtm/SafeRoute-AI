@@ -1,43 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getBlackspots } from "@/lib/api";
+import { useI18n } from "../../i18n/provider";
 
 export default function Dashboard() {
-  const [spots, setSpots] = useState<any[]>([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await getBlackspots();
-      setSpots(Array.isArray(data) ? data : data.blackspots || []);
-    };
-
-    fetchData();
-  }, []);
-
-  const topDangerous = [...spots]
-    .sort((a, b) => b.risk_score - a.risk_score)
-    .slice(0, 5);
-
-  const avgRisk =
-    spots.reduce((sum, s) => sum + s.risk_score, 0) / (spots.length || 1);
+  const { t, setLocale } = useI18n();
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>🚦 SafeRoute AI Dashboard</h1>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold">{t("title")}</h1>
 
-      <h2>📊 Overview</h2>
-      <p>Total Blackspots: {spots.length}</p>
-      <p>Average Risk: {avgRisk.toFixed(2)}</p>
+      <p className="mt-2 text-gray-600">{t("subtitle")}</p>
 
-      <h2>🔥 Top Dangerous Areas</h2>
-      <ul>
-        {topDangerous.map((s) => (
-          <li key={s.id}>
-            {s.name} — Risk: {s.risk_score}
-          </li>
-        ))}
-      </ul>
+      {/* Controls */}
+      <div className="mt-6 space-x-3">
+        <button className="px-4 py-2 bg-blue-500 text-white rounded">
+          {t("start")}
+        </button>
+
+        <button className="px-4 py-2 bg-green-500 text-white rounded">
+          {t("predict")}
+        </button>
+
+        <button className="px-4 py-2 bg-gray-700 text-white rounded">
+          {t("map")}
+        </button>
+      </div>
+
+      {/* Language switcher */}
+      <div className="mt-6">
+        <select
+          onChange={(e) => setLocale(e.target.value as any)}
+          className="border p-2 rounded"
+        >
+          <option value="en">English</option>
+          <option value="hi">हिंदी</option>
+          <option value="te">తెలుగు</option>
+        </select>
+      </div>
     </div>
   );
 }

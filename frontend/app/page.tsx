@@ -2,12 +2,15 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import { useI18n } from "../i18n/provider";
 
 const MapView = dynamic(() => import("../components/MapView"), {
   ssr: false,
 });
 
 export default function Home() {
+  const { t, setLocale } = useI18n();
+
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [result, setResult] = useState<any>(null);
@@ -31,21 +34,19 @@ export default function Home() {
     };
   };
 
-  // 🚀 Route Analyzer (MAIN FUNCTION)
+  // 🚀 Route Analyzer
   const handleAnalyze = async () => {
     try {
       if (!start || !end) {
-        alert("Please enter both From and To locations");
+        alert(t("location_error"));
         return;
       }
 
       setLoading(true);
 
-      // Convert text → coordinates
       const startCoord = await geocodeLocation(start);
       const endCoord = await geocodeLocation(end);
 
-      // Call backend safest route API
       const res = await fetch("http://127.0.0.1:8000/safest-route", {
         method: "POST",
         headers: {
@@ -63,19 +64,19 @@ export default function Home() {
 
       console.log("ROUTE RESPONSE:", data);
 
-      setResult({
-        risk_score: data.risk_score,
-        path: data.path,
-        status:
-          data.risk_score < 20
-            ? "SAFE 🟢"
-            : data.risk_score < 50
-            ? "MODERATE 🟡"
-            : "DANGEROUS 🔴",
-      });
+    setResult({
+  risk_score: data.risk_score,
+  path: data.path,
+  status:
+    data.risk_score < 20
+      ? t("safe")
+      : data.risk_score < 50
+      ? t("moderate")
+      : t("dangerous"),
+});
     } catch (err) {
       console.log("Route error:", err);
-      alert("Failed to find route or location not found");
+      alert(t("route_failed"));
     } finally {
       setLoading(false);
     }
@@ -83,14 +84,13 @@ export default function Home() {
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-
-      {/* 🗺 MAP SIDE (UNCHANGED) */}
+      {/* 🗺 MAP SIDE */}
       <div style={{ flex: 1 }}>
-      <MapView
-       route={result?.path || []}
-       startName={start}
-       endName={end}
-/>
+        <MapView
+          route={result?.path || []}
+          startName={start}
+          endName={end}
+        />
       </div>
 
       {/* 📊 RIGHT PANEL */}
@@ -103,11 +103,28 @@ export default function Home() {
           overflowY: "auto",
         }}
       >
-        <h2>SafeRoute AI Planner</h2>
+        <h2>{t("planner")}</h2>
+
+        {/* 🌐 Language Selector */}
+        <div style={{ marginBottom: "15px" }}>
+          <select
+            onChange={(e) =>
+              setLocale(e.target.value as "en" | "hi" | "te")
+            }
+            style={{
+              padding: "8px",
+              width: "100%",
+            }}
+          >
+            <option value="en">English</option>
+            <option value="hi">हिंदी</option>
+            <option value="te">తెలుగు</option>
+          </select>
+        </div>
 
         {/* FROM */}
         <input
-          placeholder="From location (e.g. Hyderabad)"
+          placeholder={t("from_placeholder")}
           value={start}
           onChange={(e) => setStart(e.target.value)}
           style={{
@@ -119,7 +136,7 @@ export default function Home() {
 
         {/* TO */}
         <input
-          placeholder="To location (e.g. Vijayawada)"
+          placeholder={t("to_placeholder")}
           value={end}
           onChange={(e) => setEnd(e.target.value)}
           style={{
@@ -141,36 +158,34 @@ export default function Home() {
             cursor: "pointer",
           }}
         >
-          {loading ? "Analyzing Route..." : "Find Safest Route"}
+          {loading ? t("analyzing") : t("find_route")}
         </button>
 
         {/* RESULT PANEL */}
         {result && (
           <div style={{ marginTop: "20px" }}>
-            <h3>Route Analysis</h3>
+            <h3>{t("route_analysis")}</h3>
 
             <p>
-              <b>Risk Score:</b>{" "}
+              <b>{t("risk_score")}:</b>{" "}
               {typeof result.risk_score === "number"
                 ? result.risk_score.toFixed(2)
                 : result.risk_score}
             </p>
 
             <p>
-              <b>Status:</b> {result.status}
+              <b>{t("status")}:</b> {result.status}
             </p>
 
             <p>
-              <b>Route Points:</b> {result.path?.length || 0}
+              <b>{t("route_points")}:</b> {result.path?.length || 0}
             </p>
 
             <hr />
 
-            <h4>AI Insight</h4>
-            <p>
-              This route is evaluated using accident history, blackspots, and ML
-              risk prediction model.
-            </p>
+            <h4>{t("ai_insight")}</h4>
+
+            <p>{t("insight_text")}</p>
           </div>
         )}
       </div>

@@ -1,0 +1,30 @@
+{
+  "title": "SafeRoute AI",
+  "subtitle": "Find safer routes using AI risk scoring",
+  "start": "Start",
+  "destination": "Destination",
+  "predict": "Predict Risk",
+  "map": "Map View",
+
+  "planner": "SafeRoute AI Planner",
+  "from_placeholder": "From location (e.g. Hyderabad)",
+  "to_placeholder": "To location (e.g. Vijayawada)",
+
+  "find_route": "Find Safest Route",
+  "analyzing": "Analyzing Route...",
+
+  "route_analysis": "Route Analysis",
+  "risk_score": "Risk Score",
+  "status": "Status",
+  "route_points": "Route Points",
+
+  "ai_insight": "AI Insight",
+  "insight_text": "This route is evaluated using accident history, blackspots, and ML risk prediction model.",
+
+  "location_error": "Please enter both From and To locations",
+  "route_failed": "Failed to find route or location not found",
+
+  "safe": "SAFE 🟢",
+  "moderate": "MODERATE 🟡",
+  "dangerous": "DANGEROUS 🔴"
+}
