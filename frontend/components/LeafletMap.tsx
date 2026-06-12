@@ -11,6 +11,7 @@ import {
   Marker,
   Popup,
   useMapEvents,
+  useMap,
 } from "react-leaflet";
 
 // -----------------------------
@@ -64,6 +65,28 @@ function MapClickHandler({ onClick }: any) {
       onClick(e.latlng);
     },
   });
+
+  return null;
+}
+
+// -----------------------------
+// AUTO FIT ROUTE
+// -----------------------------
+function RouteFit({ route }: any) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!route || route.length === 0) return;
+
+    const bounds = route.map((p: any) => [
+      Number(p.lat),
+      Number(p.lon),
+    ]);
+
+    map.fitBounds(bounds, {
+      padding: [50, 50],
+    });
+  }, [route, map]);
 
   return null;
 }
@@ -134,6 +157,9 @@ export default function LeafletMap({
       zoom={13}
       style={{ height: "100vh", width: "100%" }}
     >
+      {/* AUTO FIT ROUTE */}
+      <RouteFit route={route} />
+
       {/* TILE LAYER */}
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
