@@ -64,23 +64,35 @@ export default function Home() {
 
       console.log("ROUTE RESPONSE:", data);
 
-   setResult({
-  risk_score: data.risk_score,
-  distance_km: data.distance_km,
-  path: data.path,
-  status:
-    data.risk_score < 20
-      ? t("safe")
-      : data.risk_score < 50
-      ? t("moderate")
-      : t("dangerous"),
-});
+      setResult({
+        risk_score: data.risk_score,
+        distance_km: data.distance_km,
+        estimated_time_hr: data.estimated_time_hr,
+        path: data.path,
+        status:
+          data.risk_score < 20
+            ? t("safe")
+            : data.risk_score < 50
+            ? t("moderate")
+            : t("dangerous"),
+      });
     } catch (err) {
       console.log("Route error:", err);
       alert(t("route_failed"));
     } finally {
       setLoading(false);
     }
+  };
+
+  // ⏱ Time formatter (FIXED)
+  const formatTime = (hours?: number) => {
+    if (hours === undefined || hours === null) return "N/A";
+
+    const totalMinutes = Math.round(hours * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+
+    return `${h} hr ${m} min`;
   };
 
   return (
@@ -106,16 +118,13 @@ export default function Home() {
       >
         <h2>{t("planner")}</h2>
 
-        {/* 🌐 Language Selector */}
+        {/* 🌍 Language */}
         <div style={{ marginBottom: "15px" }}>
           <select
             onChange={(e) =>
               setLocale(e.target.value as "en" | "hi" | "te")
             }
-            style={{
-              padding: "8px",
-              width: "100%",
-            }}
+            style={{ padding: "8px", width: "100%" }}
           >
             <option value="en">English</option>
             <option value="hi">हिंदी</option>
@@ -162,7 +171,7 @@ export default function Home() {
           {loading ? t("analyzing") : t("find_route")}
         </button>
 
-        {/* RESULT PANEL */}
+        {/* RESULT */}
         {result && (
           <div style={{ marginTop: "20px" }}>
             <h3>{t("route_analysis")}</h3>
@@ -179,17 +188,24 @@ export default function Home() {
             </p>
 
             <p>
-  <b>{t("route_points")}:</b> {result.path?.length || 0}
-</p>
+              <b>{t("route_points")}:</b> {result.path?.length || 0}
+            </p>
 
-<p>
-  <b>{t("distance")}:</b> {result.distance_km} km
-</p>
+            <p>
+              <b>{t("distance")}:</b> {result.distance_km} km
+            </p>
 
-<hr />
+            {/* ⏱ FIXED TIME DISPLAY */}
+            {result.estimated_time_hr !== undefined && (
+              <p>
+                <b>⏱ Estimated Time:</b>{" "}
+                {formatTime(result.estimated_time_hr)}
+              </p>
+            )}
 
-<h4>{t("ai_insight")}</h4>
+            <hr />
 
+            <h4>{t("ai_insight")}</h4>
             <p>{t("insight_text")}</p>
           </div>
         )}

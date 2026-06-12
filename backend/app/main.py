@@ -5,6 +5,7 @@ import sqlite3
 import numpy as np
 import joblib
 import os
+import math
 
 # ---------------------------
 # App setup
@@ -41,6 +42,13 @@ else:
 class PredictRequest(BaseModel):
     latitude: float
     longitude: float
+
+
+class RouteRequest(BaseModel):
+    start_lat: float
+    start_lon: float
+    end_lat: float
+    end_lon: float
 
 
 # ---------------------------
@@ -100,15 +108,13 @@ def get_blackspots():
 def predict(data: PredictRequest):
     global model
 
+    if model is None:
+        raise RuntimeError("ML model is not loaded")
+
     lat = data.latitude
     lon = data.longitude
 
     features = np.array([[lat, lon]])
-
-    # ✅ SAFE GUARD (THIS FIXES MYPY ERROR)
-    if model is None:
-        raise RuntimeError("ML model is not loaded")
-
     risk_score = float(model.predict(features)[0])
 
     if risk_score < 40:
@@ -143,8 +149,7 @@ def predict(data: PredictRequest):
 
 
 # ---------------------------
-# OPTIONAL: nearest blackspot (backend version)
-# (You are currently doing this in frontend, so optional)
+# Nearest blackspot (optional)
 # ---------------------------
 @app.get("/nearest-blackspot")
 def nearest_blackspot(lat: float, lon: float):
@@ -159,7 +164,8 @@ def nearest_blackspot(lat: float, lon: float):
         return {"error": "No data"}
 
     nearest = min(
-        rows, key=lambda row: abs(row["latitude"] - lat) + abs(row["longitude"] - lon)
+        rows,
+        key=lambda row: abs(row["latitude"] - lat) + abs(row["longitude"] - lon),
     )
 
     return {
@@ -172,21 +178,15 @@ def nearest_blackspot(lat: float, lon: float):
     }
 
 
-class RouteRequest(BaseModel):
-    start_lat: float
-    start_lon: float
-    end_lat: float
-    end_lon: float
-
-
+# ---------------------------
+# SAFEST ROUTE (UPDATED)
+# ---------------------------
 @app.post("/safest-route")
 def safest_route(data: RouteRequest):
-    import math
-
     def risk(lat, lon):
-        return abs(lat) + abs(lon)
+        return 1
 
-    # simple demo path (MVP routing)
+    # Simple MVP route
     path = [
         {"lat": data.start_lat, "lon": data.start_lon},
         {
@@ -198,22 +198,29 @@ def safest_route(data: RouteRequest):
 
     risk_score = sum(risk(p["lat"], p["lon"]) for p in path)
 
-    # distance calculation
+    # ---------------------------
+    # Distance calculation (KM)
+    # ---------------------------
     total_distance: float = 0.0
 
     for i in range(len(path) - 1):
         lat1 = path[i]["lat"]
         lon1 = path[i]["lon"]
-
         lat2 = path[i + 1]["lat"]
         lon2 = path[i + 1]["lon"]
 
         distance = math.sqrt((lat2 - lat1) ** 2 + (lon2 - lon1) ** 2) * 111
-
         total_distance += distance
+
+    # ---------------------------
+    # Estimated travel time
+    # ---------------------------
+    AVERAGE_SPEED_KMPH = 60.0
+    estimated_time_hr = total_distance / AVERAGE_SPEED_KMPH
 
     return {
         "path": path,
         "risk_score": risk_score,
         "distance_km": round(total_distance, 2),
+        "estimated_time_hr": round(estimated_time_hr, 2),
     }
