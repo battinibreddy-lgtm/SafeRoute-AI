@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useI18n } from "../i18n/provider";
 import "leaflet/dist/leaflet.css";
 import { Polyline } from "react-leaflet";
 
@@ -75,6 +76,8 @@ export default function LeafletMap({
   startName,
   endName,
 }: any) {
+  const { t } = useI18n();
+
   const [spots, setSpots] = useState<any[]>([]);
   const [selectedRisk, setSelectedRisk] = useState<any>(null);
 
@@ -150,9 +153,9 @@ export default function LeafletMap({
           <Popup>
             <b>{spot.name}</b>
             <br />
-            Risk Score: {spot.risk_score}
+            {t("risk_score")}: {spot.risk_score}
             <br />
-            Accidents: {spot.accident_count}
+            {t("accidents")}: {spot.accident_count}
           </Popup>
         </Marker>
       ))}
@@ -167,15 +170,16 @@ export default function LeafletMap({
           icon={getRiskIcon(selectedRisk.risk_level)}
         >
           <Popup>
-            <b>AI Risk Analysis</b>
+            <b>{t("ai_risk_analysis")}</b>
             <br />
-            Score: {selectedRisk.risk_score}
+            {t("score")}: {selectedRisk.risk_score}
             <br />
-            Level: {selectedRisk.risk_level}
+            {t("level")}: {selectedRisk.risk_level}
 
             <hr />
 
-            <b>Reasons:</b>
+            <b>{t("reasons")}:</b>
+
             <ul>
               {selectedRisk.reasons?.map(
                 (reason: string, index: number) => (
@@ -197,9 +201,9 @@ export default function LeafletMap({
           icon={getRouteIcon("🟢")}
         >
           <Popup>
-            <b>Start (A)</b>
+            <b>{t("start")} (A)</b>
             <br />
-            {startName || "Starting Point"}
+            {startName || t("starting_point")}
           </Popup>
         </Marker>
       )}
@@ -214,9 +218,9 @@ export default function LeafletMap({
           icon={getRouteIcon("🔴")}
         >
           <Popup>
-            <b>Destination (B)</b>
+            <b>{t("destination")} (B)</b>
             <br />
-            {endName || "Destination"}
+            {endName || t("destination")}
           </Popup>
         </Marker>
       )}

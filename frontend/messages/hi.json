@@ -24,6 +24,13 @@
   "location_error": "कृपया प्रारंभ और गंतव्य दोनों स्थान दर्ज करें",
   "route_failed": "मार्ग नहीं मिला या स्थान नहीं मिला",
 
+  "accidents": "दुर्घटनाएँ",
+  "ai_risk_analysis": "AI जोखिम विश्लेषण",
+  "score": "स्कोर",
+  "level": "स्तर",
+  "reasons": "कारण",
+  "starting_point": "प्रारंभ बिंदु",
+
   "safe": "सुरक्षित 🟢",
   "moderate": "मध्यम 🟡",
   "dangerous": "खतरनाक 🔴"

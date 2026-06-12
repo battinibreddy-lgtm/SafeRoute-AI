@@ -24,6 +24,13 @@
   "location_error": "Please enter both From and To locations",
   "route_failed": "Failed to find route or location not found",
 
+  "accidents": "Accidents",
+  "ai_risk_analysis": "AI Risk Analysis",
+  "score": "Score",
+  "level": "Level",
+  "reasons": "Reasons",
+  "starting_point": "Starting Point",
+
   "safe": "SAFE 🟢",
   "moderate": "MODERATE 🟡",
   "dangerous": "DANGEROUS 🔴"
