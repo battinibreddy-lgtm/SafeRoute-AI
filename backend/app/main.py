@@ -6,11 +6,12 @@ import numpy as np
 import joblib
 import os
 import math
+import requests
 
 # ---------------------------
 # App setup
 # ---------------------------
-app = FastAPI(title="SafeRoute AI", version="0.1.0")
+app = FastAPI(title="SafeRoute AI", version="0.2.1")
 
 # ---------------------------
 # CORS (React frontend)
@@ -24,20 +25,20 @@ app.add_middleware(
 )
 
 # ---------------------------
-# Load ML model (XGBoost)
+# Load ML model
 # ---------------------------
 MODEL_PATH = "ml/model.pkl"
 
 model = None
 if os.path.exists(MODEL_PATH):
     model = joblib.load(MODEL_PATH)
-    print("✅ Model loaded successfully")
+    print("✅ ML model loaded")
 else:
-    print("⚠️ Model not found, using fallback logic")
+    print("⚠️ ML model not found — using fallback")
 
 
 # ---------------------------
-# Request schema
+# Request schemas
 # ---------------------------
 class PredictRequest(BaseModel):
     latitude: float
@@ -52,12 +53,58 @@ class RouteRequest(BaseModel):
 
 
 # ---------------------------
-# DB helper
+# DB connection
 # ---------------------------
 def get_db_connection():
     conn = sqlite3.connect("saferoute.db")
     conn.row_factory = sqlite3.Row
     return conn
+
+
+# ---------------------------
+# OSRM real routing
+# ---------------------------
+def get_osrm_route(start_lat, start_lon, end_lat, end_lon):
+    url = (
+        "https://router.project-osrm.org/route/v1/driving/"
+        f"{start_lon},{start_lat};{end_lon},{end_lat}"
+        "?overview=full&geometries=geojson"
+    )
+
+    try:
+        res = requests.get(url, timeout=10)
+        data = res.json()
+
+        if "routes" not in data:
+            raise Exception("No routes in OSRM response")
+
+        route = data["routes"][0]
+        coords = route["geometry"]["coordinates"]
+
+        # Convert [lon, lat] → {lat, lon}
+        path = [{"lat": lat, "lon": lon} for lon, lat in coords]
+
+        distance_km = route["distance"] / 1000
+        duration_hr = route["duration"] / 3600
+
+        return path, distance_km, duration_hr
+
+    except Exception as e:
+        print("⚠️ OSRM failed, using fallback:", e)
+
+        # fallback straight line
+        path = [
+            {"lat": start_lat, "lon": start_lon},
+            {"lat": end_lat, "lon": end_lon},
+        ]
+
+        distance_km = (
+            math.sqrt((end_lat - start_lat) ** 2 + (end_lon - start_lon) ** 2) * 111
+        )
+
+        duration_hr = distance_km / 60
+
+        return path, distance_km, duration_hr
 
 
 # ---------------------------
@@ -77,7 +124,7 @@ def health():
 
 
 # ---------------------------
-# Blackspots API
+# Blackspots
 # ---------------------------
 @app.get("/blackspots")
 def get_blackspots():
@@ -90,66 +137,51 @@ def get_blackspots():
 
     return [
         {
-            "id": row["id"],
-            "name": row["name"],
-            "latitude": row["latitude"],
-            "longitude": row["longitude"],
-            "risk_score": row["risk_score"],
-            "accident_count": row["accident_count"],
+            "id": r["id"],
+            "name": r["name"],
+            "latitude": r["latitude"],
+            "longitude": r["longitude"],
+            "risk_score": r["risk_score"],
+            "accident_count": r["accident_count"],
         }
-        for row in rows
+        for r in rows
     ]
 
 
 # ---------------------------
-# ML Prediction endpoint
+# ML prediction
 # ---------------------------
 @app.post("/predict")
 def predict(data: PredictRequest):
-    global model
-
     if model is None:
-        raise RuntimeError("ML model is not loaded")
+        return {
+            "risk_score": 50,
+            "risk_level": "MEDIUM 🟡",
+            "reasons": ["Fallback mode active"],
+        }
 
-    lat = data.latitude
-    lon = data.longitude
-
-    features = np.array([[lat, lon]])
+    features = np.array([[data.latitude, data.longitude]])
     risk_score = float(model.predict(features)[0])
 
     if risk_score < 40:
         level = "LOW 🟢"
-        reasons = [
-            "Low accident density nearby",
-            "Stable road conditions",
-            "Normal traffic flow",
-        ]
+        reasons = ["Low accident density", "Stable traffic"]
     elif risk_score < 70:
         level = "MEDIUM 🟡"
-        reasons = [
-            "Moderate accident history",
-            "Occasional congestion",
-            "Some risky intersections nearby",
-        ]
+        reasons = ["Moderate risk zone", "Some congestion"]
     else:
         level = "HIGH 🔴"
-        reasons = [
-            "Frequent accidents recorded",
-            "High traffic density zone",
-            "Dangerous road geometry or junction",
-        ]
+        reasons = ["Frequent accidents", "Dangerous junction"]
 
     return {
         "risk_score": risk_score,
         "risk_level": level,
         "reasons": reasons,
-        "latitude": lat,
-        "longitude": lon,
     }
 
 
 # ---------------------------
-# Nearest blackspot (optional)
+# Nearest blackspot
 # ---------------------------
 @app.get("/nearest-blackspot")
 def nearest_blackspot(lat: float, lon: float):
@@ -165,7 +197,7 @@ def nearest_blackspot(lat: float, lon: float):
 
     nearest = min(
         rows,
-        key=lambda row: abs(row["latitude"] - lat) + abs(row["longitude"] - lon),
+        key=lambda r: abs(r["latitude"] - lat) + abs(r["longitude"] - lon),
     )
 
     return {
@@ -174,53 +206,46 @@ def nearest_blackspot(lat: float, lon: float):
         "latitude": nearest["latitude"],
         "longitude": nearest["longitude"],
         "risk_score": nearest["risk_score"],
-        "accident_count": nearest["accident_count"],
     }
 
 
 # ---------------------------
-# SAFEST ROUTE (UPDATED)
+# SAFEST ROUTE (FIXED + REAL ROUTING)
 # ---------------------------
 @app.post("/safest-route")
 def safest_route(data: RouteRequest):
+    # 1 risk per km (stable + realistic demo scaling)
     def risk(lat, lon):
-        return 1
+        return 0.1
 
-    # Simple MVP route
-    path = [
-        {"lat": data.start_lat, "lon": data.start_lon},
-        {
-            "lat": (data.start_lat + data.end_lat) / 2,
-            "lon": (data.start_lon + data.end_lon) / 2,
-        },
-        {"lat": data.end_lat, "lon": data.end_lon},
-    ]
-
-    risk_score = sum(risk(p["lat"], p["lon"]) for p in path)
+    # Get real road route
+    path, distance_km, duration_hr = get_osrm_route(
+        data.start_lat,
+        data.start_lon,
+        data.end_lat,
+        data.end_lon,
+    )
 
     # ---------------------------
-    # Distance calculation (KM)
+    # FIXED RISK SCORE (NO EXPLOSION)
     # ---------------------------
-    total_distance: float = 0.0
+    risk_score = round(distance_km * 0.15, 2)
 
-    for i in range(len(path) - 1):
-        lat1 = path[i]["lat"]
-        lon1 = path[i]["lon"]
-        lat2 = path[i + 1]["lat"]
-        lon2 = path[i + 1]["lon"]
-
-        distance = math.sqrt((lat2 - lat1) ** 2 + (lon2 - lon1) ** 2) * 111
-        total_distance += distance
-
-    # ---------------------------
-    # Estimated travel time
-    # ---------------------------
-    AVERAGE_SPEED_KMPH = 60.0
-    estimated_time_hr = total_distance / AVERAGE_SPEED_KMPH
+    # Optional: add mild penalty for long routes
+    risk_score = min(risk_score, 100)
 
     return {
         "path": path,
         "risk_score": risk_score,
-        "distance_km": round(total_distance, 2),
-        "estimated_time_hr": round(estimated_time_hr, 2),
+        "risk_level": (
+            "LOW 🟢"
+            if risk_score < 30
+            else "MEDIUM 🟡"
+            if risk_score < 70
+            else "HIGH 🔴"
+        ),
+        "distance_km": round(distance_km, 2),
+        "estimated_time_hr": round(duration_hr, 2),
+        "estimated_time_min": round(duration_hr * 60, 0),
+        "points": len(path),
     }
