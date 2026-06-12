@@ -7,7 +7,7 @@ router = APIRouter()
 
 @router.post("/predict")
 def predict(data: PredictRequest):
-    risk = predict_risk(data.dict())
+    risk = predict_risk(data.model_dump())
 
     return {
         "risk_score": round(risk, 2),

@@ -2,6 +2,8 @@ stages:
   - lint
   - format
   - type_check
+  - quality
+  - security
   - test
   - coverage
 
@@ -9,28 +11,85 @@ image: python:3.12
 
 before_script:
   - python -V
-  - pip install --upgrade pip --timeout 120 --retries 5
-  - pip install ruff mypy pytest pytest-cov --timeout 120 --retries 5
+  - pip install --upgrade pip
+  - pip install ruff mypy pytest pytest-cov pip-audit vulture bandit pylint flake8 semgrep pyupgrade
+
+# -------------------
+# LINT
+# -------------------
 lint:
   stage: lint
   script:
     - ruff check .
 
+# -------------------
+# FORMAT
+# -------------------
 format:
   stage: format
   script:
     - ruff format --check .
 
+# -------------------
+# TYPE CHECK
+# -------------------
 type_check:
   stage: type_check
   script:
     - mypy .
 
+# -------------------
+# QUALITY TOOLS
+# -------------------
+vulture:
+  stage: quality
+  script:
+    - vulture backend/
+
+pylint:
+  stage: quality
+  script:
+    - pylint backend
+
+flake8:
+  stage: quality
+  script:
+    - flake8 backend
+
+pyupgrade:
+  stage: quality
+  script:
+    - pyupgrade backend/**/*.py
+
+# -------------------
+# SECURITY
+# -------------------
+bandit:
+  stage: security
+  script:
+    - bandit -r backend
+
+semgrep:
+  stage: security
+  script:
+    - semgrep --config=auto backend
+
+dependency_audit:
+  stage: security
+  script:
+    - pip-audit
+
+# -------------------
+# TESTS
+# -------------------
 test:
   stage: test
   script:
     - pytest -q
 
+# -------------------
+# COVERAGE
+# -------------------
 coverage:
   stage: coverage
   script:
