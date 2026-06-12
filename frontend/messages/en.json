@@ -17,6 +17,7 @@
   "risk_score": "Risk Score",
   "status": "Status",
   "route_points": "Route Points",
+  "distance": "Distance",
 
   "ai_insight": "AI Insight",
   "insight_text": "This route is evaluated using accident history, blackspots, and ML risk prediction model.",

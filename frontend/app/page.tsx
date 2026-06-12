@@ -64,8 +64,9 @@ export default function Home() {
 
       console.log("ROUTE RESPONSE:", data);
 
-    setResult({
+   setResult({
   risk_score: data.risk_score,
+  distance_km: data.distance_km,
   path: data.path,
   status:
     data.risk_score < 20
@@ -178,12 +179,16 @@ export default function Home() {
             </p>
 
             <p>
-              <b>{t("route_points")}:</b> {result.path?.length || 0}
-            </p>
+  <b>{t("route_points")}:</b> {result.path?.length || 0}
+</p>
 
-            <hr />
+<p>
+  <b>{t("distance")}:</b> {result.distance_km} km
+</p>
 
-            <h4>{t("ai_insight")}</h4>
+<hr />
+
+<h4>{t("ai_insight")}</h4>
 
             <p>{t("insight_text")}</p>
           </div>

@@ -181,6 +181,8 @@ class RouteRequest(BaseModel):
 
 @app.post("/safest-route")
 def safest_route(data: RouteRequest):
+    import math
+
     def risk(lat, lon):
         return abs(lat) + abs(lon)
 
@@ -196,4 +198,22 @@ def safest_route(data: RouteRequest):
 
     risk_score = sum(risk(p["lat"], p["lon"]) for p in path)
 
-    return {"path": path, "risk_score": risk_score}
+    # distance calculation
+    total_distance: float = 0.0
+
+    for i in range(len(path) - 1):
+        lat1 = path[i]["lat"]
+        lon1 = path[i]["lon"]
+
+        lat2 = path[i + 1]["lat"]
+        lon2 = path[i + 1]["lon"]
+
+        distance = math.sqrt((lat2 - lat1) ** 2 + (lon2 - lon1) ** 2) * 111
+
+        total_distance += distance
+
+    return {
+        "path": path,
+        "risk_score": risk_score,
+        "distance_km": round(total_distance, 2),
+    }
