@@ -21,6 +21,16 @@
 
   "ai_insight": "AI Insight",
   "insight_text": "This route is evaluated using accident history, blackspots, and ML risk prediction model.",
+  "ai_settings": "AI Settings",
+  "ai_provider": "AI Provider",
+  "ai_offline": "Offline ML fallback",
+  "ai_ollama": "Local Ollama",
+  "ai_byok": "BYOK OpenAI",
+  "ai_openai_compatible": "BYOK OpenAI-compatible",
+  "ai_base_url": "AI base URL (optional)",
+  "ai_model": "AI model (optional)",
+  "ai_byok_credential": "BYOK credential",
+  "ai_fallback": "fallback used",
 
   "location_error": "Please enter both From and To locations",
   "route_failed": "Failed to find route or location not found",

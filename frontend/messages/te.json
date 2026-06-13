@@ -21,6 +21,16 @@
 
   "ai_insight": "AI విశ్లేషణ",
   "insight_text": "ఈ మార్గాన్ని ప్రమాద చరిత్ర, బ్లాక్‌స్పాట్లు మరియు ML ప్రమాద అంచనా మోడల్ ఆధారంగా విశ్లేషించారు.",
+  "ai_settings": "AI సెట్టింగులు",
+  "ai_provider": "AI ప్రొవైడర్",
+  "ai_offline": "ఆఫ్లైన్ ML fallback",
+  "ai_ollama": "లోకల్ Ollama",
+  "ai_byok": "BYOK OpenAI",
+  "ai_openai_compatible": "BYOK OpenAI-compatible",
+  "ai_base_url": "AI base URL (ఐచ్ఛికం)",
+  "ai_model": "AI మోడల్ (ఐచ్ఛికం)",
+  "ai_byok_credential": "BYOK credential",
+  "ai_fallback": "fallback ఉపయోగించారు",
 
   "location_error": "దయచేసి ప్రారంభం మరియు గమ్యం రెండింటినీ నమోదు చేయండి",
   "route_failed": "మార్గం కనుగొనలేకపోయింది లేదా స్థలం కనుగొనబడలేదు",

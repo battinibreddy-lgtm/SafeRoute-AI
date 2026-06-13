@@ -1,4 +1,3 @@
-from fastapi.middleware.cors import CORSMiddleware
 import math
 import os
 import sqlite3
@@ -6,7 +5,8 @@ import sqlite3
 import joblib
 import numpy as np
 import requests
-from fastapi import FastAPI
+from fastapi import FastAPI, Header
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 
@@ -60,6 +60,15 @@ class RouteRequest(BaseModel):
     start_lon: float
     end_lat: float
     end_lon: float
+
+
+class RouteInsightRequest(BaseModel):
+    start: str
+    end: str
+    risk_score: float
+    risk_level: str
+    distance_km: float | None = None
+    estimated_time_min: float | None = None
 
 
 # ---------------------------
@@ -125,12 +134,175 @@ def root():
     return {"message": "SafeRoute AI running"}
 
 
+def get_ai_settings(
+    provider: str | None = None,
+    base_url: str | None = None,
+    model_name: str | None = None,
+    api_key: str | None = None,
+):
+    selected_provider = (
+        (provider or os.getenv("AI_PROVIDER") or "offline").strip().lower()
+    )
+    selected_model = (model_name or os.getenv("AI_MODEL") or "").strip()
+    selected_base_url = (base_url or os.getenv("AI_BASE_URL") or "").strip()
+    selected_api_key = api_key or os.getenv("AI_API_KEY") or ""
+
+    if selected_provider == "ollama":
+        selected_base_url = selected_base_url or "http://localhost:11434"
+        selected_model = selected_model or "llama3.1"
+    elif selected_provider in {"openai", "openai-compatible"}:
+        selected_base_url = selected_base_url or "https://api.openai.com"
+        selected_model = selected_model or "gpt-4o-mini"
+
+    return {
+        "provider": selected_provider,
+        "base_url": selected_base_url,
+        "model": selected_model,
+        "has_api_key": bool(selected_api_key),
+        "api_key": selected_api_key,
+    }
+
+
+def build_route_prompt(data: RouteInsightRequest):
+    return (
+        "You are SafeRoute AI. Give a concise road safety insight for this route. "
+        "Mention the risk level, likely reason, and one practical safety suggestion. "
+        f"Route: {data.start} to {data.end}. "
+        f"Risk score: {data.risk_score:.2f}. "
+        f"Risk level: {data.risk_level}. "
+        f"Distance: {data.distance_km or 0:.2f} km. "
+        f"Estimated time: {data.estimated_time_min or 0:.0f} minutes."
+    )
+
+
+def fallback_route_insight(data: RouteInsightRequest):
+    if data.risk_score < 30:
+        return (
+            "AI safety summary: This route currently looks low risk based on the "
+            "ML score. Keep normal caution near junctions and watch for changing "
+            "traffic conditions."
+        )
+    if data.risk_score < 70:
+        return (
+            "AI safety summary: This route has moderate risk. Drive defensively, "
+            "slow down near busy intersections, and avoid distractions."
+        )
+    return (
+        "AI safety summary: This route has high risk. Consider traveling during "
+        "lower-traffic hours or checking alternate routes before starting."
+    )
+
+
+def call_ai_provider(prompt: str, settings: dict):
+    provider = settings["provider"]
+    base_url = settings["base_url"].rstrip("/")
+    model_name = settings["model"]
+    api_key = settings["api_key"]
+
+    if provider == "ollama":
+        response = requests.post(
+            f"{base_url}/api/chat",
+            json={
+                "model": model_name,
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": False,
+            },
+            timeout=20,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        return payload.get("message", {}).get("content", "").strip()
+
+    if provider in {"openai", "openai-compatible"}:
+        headers = {"Authorization": f"Bearer {api_key}"}
+        response = requests.post(
+            f"{base_url}/v1/chat/completions",
+            headers=headers,
+            json={
+                "model": model_name,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.3,
+            },
+            timeout=20,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        return payload["choices"][0]["message"]["content"].strip()
+
+    return ""
+
+
 # ---------------------------
 # Health check
 # ---------------------------
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/ai/settings")
+def ai_settings():
+    settings = get_ai_settings()
+    return {
+        "provider": settings["provider"],
+        "base_url": settings["base_url"],
+        "model": settings["model"],
+        "has_server_key": settings["has_api_key"],
+        "supports": ["offline", "ollama", "openai", "openai-compatible"],
+    }
+
+
+@app.post("/ai/route-insight")
+def route_insight(
+    data: RouteInsightRequest,
+    x_ai_provider: str | None = Header(default=None),
+    x_ai_base_url: str | None = Header(default=None),
+    x_ai_model: str | None = Header(default=None),
+    x_ai_api_key: str | None = Header(default=None),
+):
+    settings = get_ai_settings(
+        provider=x_ai_provider,
+        base_url=x_ai_base_url,
+        model_name=x_ai_model,
+        api_key=x_ai_api_key,
+    )
+
+    if settings["provider"] == "offline":
+        return {
+            "provider": "offline",
+            "insight": fallback_route_insight(data),
+            "fallback": True,
+        }
+
+    if (
+        settings["provider"] in {"openai", "openai-compatible"}
+        and not settings["api_key"]
+    ):
+        return {
+            "provider": settings["provider"],
+            "insight": fallback_route_insight(data),
+            "fallback": True,
+            "warning": "AI API key not configured",
+        }
+
+    try:
+        insight = call_ai_provider(build_route_prompt(data), settings)
+        if not insight:
+            raise ValueError("AI provider returned an empty response")
+        return {
+            "provider": settings["provider"],
+            "model": settings["model"],
+            "insight": insight,
+            "fallback": False,
+        }
+    except Exception as exc:
+        print("AI provider failed, using fallback:", exc)
+        return {
+            "provider": settings["provider"],
+            "insight": fallback_route_insight(data),
+            "fallback": True,
+            "warning": "AI provider unavailable",
+        }
 
 
 # ---------------------------

@@ -21,6 +21,16 @@
 
   "ai_insight": "AI विश्लेषण",
   "insight_text": "इस मार्ग का मूल्यांकन दुर्घटना इतिहास, ब्लैकस्पॉट और एमएल जोखिम मॉडल के आधार पर किया गया है।",
+  "ai_settings": "AI सेटिंग्स",
+  "ai_provider": "AI प्रदाता",
+  "ai_offline": "ऑफलाइन ML fallback",
+  "ai_ollama": "लोकल Ollama",
+  "ai_byok": "BYOK OpenAI",
+  "ai_openai_compatible": "BYOK OpenAI-compatible",
+  "ai_base_url": "AI base URL (वैकल्पिक)",
+  "ai_model": "AI मॉडल (वैकल्पिक)",
+  "ai_byok_credential": "BYOK credential",
+  "ai_fallback": "fallback उपयोग हुआ",
 
   "location_error": "कृपया प्रारंभ और गंतव्य दोनों स्थान दर्ज करें",
   "route_failed": "मार्ग नहीं मिला या स्थान नहीं मिला",

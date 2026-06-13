@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "../i18n/provider";
 import { API_BASE_URL } from "../src/lib/api";
 
@@ -9,13 +9,90 @@ const MapView = dynamic(() => import("../components/MapView"), {
   ssr: false,
 });
 
+type AISettings = {
+  provider: "offline" | "ollama" | "openai" | "openai-compatible";
+  baseUrl: string;
+  model: string;
+  apiKey: string;
+};
+
+type RouteResult = {
+  risk_score: number;
+  distance_km: number;
+  estimated_time_hr?: number;
+  path: Array<{ lat: number; lon: number }>;
+  status: string;
+  aiInsight: string;
+  aiProvider: string;
+  aiFallback: boolean;
+};
+
+const defaultAISettings: AISettings = {
+  provider: "offline",
+  baseUrl: "",
+  model: "",
+  apiKey: "",
+};
+
 export default function Home() {
   const { t, setLocale } = useI18n();
 
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<RouteResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [aiSettings, setAISettings] = useState<AISettings>(() => {
+    if (typeof window === "undefined") return defaultAISettings;
+
+    const saved = window.localStorage.getItem("saferoute-ai-settings");
+    if (!saved) return defaultAISettings;
+
+    try {
+      return { ...defaultAISettings, ...JSON.parse(saved) };
+    } catch {
+      return defaultAISettings;
+    }
+  });
+  const [showAISettings, setShowAISettings] = useState(false);
+
+  useEffect(() => {
+    if (window.localStorage.getItem("saferoute-ai-settings")) return;
+
+    fetch(`${API_BASE_URL}/ai/settings`)
+      .then((res) => res.json())
+      .then((data) => {
+        setAISettings({
+          provider: data.provider || "offline",
+          baseUrl: data.base_url || "",
+          model: data.model || "",
+          apiKey: "",
+        });
+      })
+      .catch(() => {
+        setAISettings(defaultAISettings);
+      });
+  }, []);
+
+  const updateAISettings = (settings: AISettings) => {
+    setAISettings(settings);
+    window.localStorage.setItem(
+      "saferoute-ai-settings",
+      JSON.stringify(settings)
+    );
+  };
+
+  const aiHeaders = () => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "X-AI-Provider": aiSettings.provider,
+    };
+
+    if (aiSettings.baseUrl) headers["X-AI-Base-URL"] = aiSettings.baseUrl;
+    if (aiSettings.model) headers["X-AI-Model"] = aiSettings.model;
+    if (aiSettings.apiKey) headers["X-AI-API-Key"] = aiSettings.apiKey;
+
+    return headers;
+  };
 
   // 🌍 Geocoding (OpenStreetMap)
   const geocodeLocation = async (place: string) => {
@@ -65,17 +142,36 @@ export default function Home() {
 
       console.log("ROUTE RESPONSE:", data);
 
+      const status =
+        data.risk_score < 20
+          ? t("safe")
+          : data.risk_score < 50
+          ? t("moderate")
+          : t("dangerous");
+
+      const insightRes = await fetch(`${API_BASE_URL}/ai/route-insight`, {
+        method: "POST",
+        headers: aiHeaders(),
+        body: JSON.stringify({
+          start,
+          end,
+          risk_score: data.risk_score,
+          risk_level: status,
+          distance_km: data.distance_km,
+          estimated_time_min: data.estimated_time_min,
+        }),
+      });
+      const insightData = await insightRes.json();
+
       setResult({
         risk_score: data.risk_score,
         distance_km: data.distance_km,
         estimated_time_hr: data.estimated_time_hr,
         path: data.path,
-        status:
-          data.risk_score < 20
-            ? t("safe")
-            : data.risk_score < 50
-            ? t("moderate")
-            : t("dangerous"),
+        status,
+        aiInsight: insightData.insight || t("insight_text"),
+        aiProvider: insightData.provider || aiSettings.provider,
+        aiFallback: Boolean(insightData.fallback),
       });
     } catch (err) {
       console.log("Route error:", err);
@@ -131,6 +227,108 @@ export default function Home() {
             <option value="hi">हिंदी</option>
             <option value="te">తెలుగు</option>
           </select>
+        </div>
+
+        <div
+          style={{
+            border: "1px solid #ddd",
+            borderRadius: "6px",
+            padding: "12px",
+            marginBottom: "15px",
+            background: "white",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setShowAISettings(!showAISettings)}
+            style={{
+              width: "100%",
+              padding: "8px",
+              background: "#f3f4f6",
+              border: "1px solid #d1d5db",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            {t("ai_settings")} · {aiSettings.provider}
+          </button>
+
+          {showAISettings && (
+            <div style={{ marginTop: "12px" }}>
+              <label style={{ display: "block", marginBottom: "6px" }}>
+                {t("ai_provider")}
+              </label>
+              <select
+                value={aiSettings.provider}
+                onChange={(e) =>
+                  updateAISettings({
+                    ...aiSettings,
+                    provider: e.target.value as AISettings["provider"],
+                  })
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  marginBottom: "10px",
+                }}
+              >
+                <option value="offline">{t("ai_offline")}</option>
+                <option value="ollama">{t("ai_ollama")}</option>
+                <option value="openai">{t("ai_byok")}</option>
+                <option value="openai-compatible">
+                  {t("ai_openai_compatible")}
+                </option>
+              </select>
+
+              <input
+                placeholder={t("ai_base_url")}
+                value={aiSettings.baseUrl}
+                onChange={(e) =>
+                  updateAISettings({
+                    ...aiSettings,
+                    baseUrl: e.target.value,
+                  })
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  marginBottom: "10px",
+                }}
+              />
+
+              <input
+                placeholder={t("ai_model")}
+                value={aiSettings.model}
+                onChange={(e) =>
+                  updateAISettings({
+                    ...aiSettings,
+                    model: e.target.value,
+                  })
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  marginBottom: "10px",
+                }}
+              />
+
+              <input
+                placeholder={t("ai_byok_credential")}
+                type="password"
+                value={aiSettings.apiKey}
+                onChange={(e) =>
+                  updateAISettings({
+                    ...aiSettings,
+                    apiKey: e.target.value,
+                  })
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* FROM */}
@@ -207,7 +405,11 @@ export default function Home() {
             <hr />
 
             <h4>{t("ai_insight")}</h4>
-            <p>{t("insight_text")}</p>
+            <p>{result.aiInsight}</p>
+            <p style={{ color: "#666", fontSize: "13px" }}>
+              {t("ai_provider")}: {result.aiProvider}
+              {result.aiFallback ? ` · ${t("ai_fallback")}` : ""}
+            </p>
           </div>
         )}
       </div>
