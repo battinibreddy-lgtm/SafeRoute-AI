@@ -18,6 +18,9 @@
   "status": "Status",
   "route_points": "Route Points",
   "distance": "Distance",
+  "estimated_time": "Estimated Time",
+  "time_hour": "hr",
+  "time_minute": "min",
 
   "ai_insight": "AI Insight",
   "insight_text": "This route is evaluated using accident history, blackspots, and ML risk prediction model.",

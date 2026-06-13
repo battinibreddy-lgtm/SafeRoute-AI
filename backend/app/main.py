@@ -67,6 +67,7 @@ class RouteInsightRequest(BaseModel):
     end: str
     risk_score: float
     risk_level: str
+    locale: str = "en"
     distance_km: float | None = None
     estimated_time_min: float | None = None
 
@@ -164,9 +165,11 @@ def get_ai_settings(
 
 
 def build_route_prompt(data: RouteInsightRequest):
+    language = {"hi": "Hindi", "te": "Telugu"}.get(data.locale, "English")
     return (
         "You are SafeRoute AI. Give a concise road safety insight for this route. "
         "Mention the risk level, likely reason, and one practical safety suggestion. "
+        f"Respond in {language}. "
         f"Route: {data.start} to {data.end}. "
         f"Risk score: {data.risk_score:.2f}. "
         f"Risk level: {data.risk_level}. "
@@ -176,6 +179,43 @@ def build_route_prompt(data: RouteInsightRequest):
 
 
 def fallback_route_insight(data: RouteInsightRequest):
+    if data.locale == "hi":
+        if data.risk_score < 30:
+            return (
+                "AI सुरक्षा सारांश: यह मार्ग अभी कम जोखिम वाला दिखता है। "
+                "चौराहों के पास सामान्य सावधानी रखें और बदलती ट्रैफिक स्थिति "
+                "पर ध्यान दें।"
+            )
+        if data.risk_score < 70:
+            return (
+                "AI सुरक्षा सारांश: इस मार्ग में मध्यम जोखिम है। सावधानी से "
+                "वाहन चलाएं, व्यस्त चौराहों के पास गति कम रखें और ध्यान भटकने "
+                "से बचें।"
+            )
+        return (
+            "AI सुरक्षा सारांश: इस मार्ग में उच्च जोखिम है। कम ट्रैफिक वाले "
+            "समय में यात्रा करें या शुरू करने से पहले वैकल्पिक मार्ग देखें।"
+        )
+
+    if data.locale == "te":
+        if data.risk_score < 30:
+            return (
+                "AI భద్రతా సారాంశం: ఈ మార్గం ప్రస్తుతం తక్కువ ప్రమాదంగా "
+                "కనిపిస్తోంది. కూడళ్ల దగ్గర సాధారణ జాగ్రత్తలు పాటించండి మరియు "
+                "మారుతున్న ట్రాఫిక్ పరిస్థితులను గమనించండి."
+            )
+        if data.risk_score < 70:
+            return (
+                "AI భద్రతా సారాంశం: ఈ మార్గంలో మధ్యస్థ ప్రమాదం ఉంది. జాగ్రత్తగా "
+                "డ్రైవ్ చేయండి, రద్దీ కూడళ్ల దగ్గర వేగం తగ్గించండి మరియు దృష్టి "
+                "మళ్లించే విషయాలను నివారించండి."
+            )
+        return (
+            "AI భద్రతా సారాంశం: ఈ మార్గంలో అధిక ప్రమాదం ఉంది. తక్కువ ట్రాఫిక్ "
+            "సమయంలో ప్రయాణించడం లేదా ప్రారంభించే ముందు ప్రత్యామ్నాయ మార్గాలను "
+            "చూడడం మంచిది."
+        )
+
     if data.risk_score < 30:
         return (
             "AI safety summary: This route currently looks low risk based on the "

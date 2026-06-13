@@ -20,11 +20,14 @@ type RouteResult = {
   risk_score: number;
   distance_km: number;
   estimated_time_hr?: number;
+  estimated_time_min?: number;
   path: Array<{ lat: number; lon: number }>;
-  status: string;
+  startName: string;
+  endName: string;
   aiInsight: string;
   aiProvider: string;
   aiFallback: boolean;
+  aiLocale: string;
 };
 
 const defaultAISettings: AISettings = {
@@ -35,42 +38,44 @@ const defaultAISettings: AISettings = {
 };
 
 export default function Home() {
-  const { t, setLocale } = useI18n();
+  const { locale, t, setLocale } = useI18n();
 
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [result, setResult] = useState<RouteResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [aiSettings, setAISettings] = useState<AISettings>(() => {
-    if (typeof window === "undefined") return defaultAISettings;
-
-    const saved = window.localStorage.getItem("saferoute-ai-settings");
-    if (!saved) return defaultAISettings;
-
-    try {
-      return { ...defaultAISettings, ...JSON.parse(saved) };
-    } catch {
-      return defaultAISettings;
-    }
-  });
+  const [aiSettings, setAISettings] =
+    useState<AISettings>(defaultAISettings);
   const [showAISettings, setShowAISettings] = useState(false);
 
   useEffect(() => {
-    if (window.localStorage.getItem("saferoute-ai-settings")) return;
+    const timeout = window.setTimeout(() => {
+      const saved = window.localStorage.getItem("saferoute-ai-settings");
+      if (saved) {
+        try {
+          setAISettings({ ...defaultAISettings, ...JSON.parse(saved) });
+        } catch {
+          setAISettings(defaultAISettings);
+        }
+        return;
+      }
 
-    fetch(`${API_BASE_URL}/ai/settings`)
-      .then((res) => res.json())
-      .then((data) => {
-        setAISettings({
-          provider: data.provider || "offline",
-          baseUrl: data.base_url || "",
-          model: data.model || "",
-          apiKey: "",
+      fetch(`${API_BASE_URL}/ai/settings`)
+        .then((res) => res.json())
+        .then((data) => {
+          setAISettings({
+            provider: data.provider || "offline",
+            baseUrl: data.base_url || "",
+            model: data.model || "",
+            apiKey: "",
+          });
+        })
+        .catch(() => {
+          setAISettings(defaultAISettings);
         });
-      })
-      .catch(() => {
-        setAISettings(defaultAISettings);
-      });
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
   }, []);
 
   const updateAISettings = (settings: AISettings) => {
@@ -93,6 +98,75 @@ export default function Home() {
 
     return headers;
   };
+
+  const getRiskStatusKey = (riskScore: number) => {
+    if (riskScore < 20) return "safe";
+    if (riskScore < 50) return "moderate";
+    return "dangerous";
+  };
+
+  const fetchRouteInsight = async (route: {
+    startName: string;
+    endName: string;
+    risk_score: number;
+    distance_km: number;
+    estimated_time_min?: number;
+  }) => {
+    const status = t(getRiskStatusKey(route.risk_score));
+    const insightRes = await fetch(`${API_BASE_URL}/ai/route-insight`, {
+      method: "POST",
+      headers: aiHeaders(),
+      body: JSON.stringify({
+        start: route.startName,
+        end: route.endName,
+        risk_score: route.risk_score,
+        risk_level: status,
+        locale,
+        distance_km: route.distance_km,
+        estimated_time_min: route.estimated_time_min,
+      }),
+    });
+
+    return insightRes.json();
+  };
+
+  useEffect(() => {
+    if (!result || result.aiLocale === locale) return;
+
+    let cancelled = false;
+
+    fetchRouteInsight(result)
+      .then((insightData) => {
+        if (cancelled) return;
+        setResult((current) => {
+          if (!current) return current;
+          return {
+            ...current,
+            aiInsight: insightData.insight || t("insight_text"),
+            aiProvider: insightData.provider || aiSettings.provider,
+            aiFallback: Boolean(insightData.fallback),
+            aiLocale: locale,
+          };
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setResult((current) => {
+          if (!current) return current;
+          return {
+            ...current,
+            aiInsight: t("insight_text"),
+            aiProvider: aiSettings.provider,
+            aiFallback: true,
+            aiLocale: locale,
+          };
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, result, aiSettings.provider, t]);
 
   // 🌍 Geocoding (OpenStreetMap)
   const geocodeLocation = async (place: string) => {
@@ -142,36 +216,27 @@ export default function Home() {
 
       console.log("ROUTE RESPONSE:", data);
 
-      const status =
-        data.risk_score < 20
-          ? t("safe")
-          : data.risk_score < 50
-          ? t("moderate")
-          : t("dangerous");
-
-      const insightRes = await fetch(`${API_BASE_URL}/ai/route-insight`, {
-        method: "POST",
-        headers: aiHeaders(),
-        body: JSON.stringify({
-          start,
-          end,
-          risk_score: data.risk_score,
-          risk_level: status,
-          distance_km: data.distance_km,
-          estimated_time_min: data.estimated_time_min,
-        }),
-      });
-      const insightData = await insightRes.json();
+      const routeResult = {
+        startName: start,
+        endName: end,
+        risk_score: data.risk_score,
+        distance_km: data.distance_km,
+        estimated_time_min: data.estimated_time_min,
+      };
+      const insightData = await fetchRouteInsight(routeResult);
 
       setResult({
         risk_score: data.risk_score,
         distance_km: data.distance_km,
         estimated_time_hr: data.estimated_time_hr,
+        estimated_time_min: data.estimated_time_min,
         path: data.path,
-        status,
+        startName: start,
+        endName: end,
         aiInsight: insightData.insight || t("insight_text"),
         aiProvider: insightData.provider || aiSettings.provider,
         aiFallback: Boolean(insightData.fallback),
+        aiLocale: locale,
       });
     } catch (err) {
       console.log("Route error:", err);
@@ -189,7 +254,7 @@ export default function Home() {
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60;
 
-    return `${h} hr ${m} min`;
+    return `${h} ${t("time_hour")} ${m} ${t("time_minute")}`;
   };
 
   return (
@@ -383,7 +448,8 @@ export default function Home() {
             </p>
 
             <p>
-              <b>{t("status")}:</b> {result.status}
+              <b>{t("status")}:</b>{" "}
+              {t(getRiskStatusKey(result.risk_score))}
             </p>
 
             <p>
@@ -397,7 +463,7 @@ export default function Home() {
             {/* ⏱ FIXED TIME DISPLAY */}
             {result.estimated_time_hr !== undefined && (
               <p>
-                <b>⏱ Estimated Time:</b>{" "}
+                <b>⏱ {t("estimated_time")}:</b>{" "}
                 {formatTime(result.estimated_time_hr)}
               </p>
             )}
