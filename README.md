@@ -56,6 +56,8 @@ npm install
 npm run dev
 ```
 
+Live Link:https://safe-route-ai-mu.vercel.app
+
 Frontend: http://localhost:3000
 
 Backend: http://localhost:8000
