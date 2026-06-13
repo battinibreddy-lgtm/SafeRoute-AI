@@ -47,5 +47,12 @@
 
   "safe": "సురక్షితం 🟢",
   "moderate": "మధ్యస్థం 🟡",
-  "dangerous": "ప్రమాదకరం 🔴"
+  "dangerous": "ప్రమాదకరం 🔴",
+  "reason_fallback_mode_active": "Fallback మోడ్ సక్రియంగా ఉంది",
+  "reason_low_accident_density": "ప్రమాదాల సాంద్రత తక్కువగా ఉంది",
+  "reason_stable_traffic": "ట్రాఫిక్ స్థిరంగా ఉంది",
+  "reason_moderate_risk_zone": "మధ్యస్థ ప్రమాద ప్రాంతం",
+  "reason_some_congestion": "కొంత ట్రాఫిక్ రద్దీ ఉంది",
+  "reason_frequent_accidents": "తరచుగా ప్రమాదాలు జరుగుతాయి",
+  "reason_dangerous_junction": "ప్రమాదకరమైన కూడలి"
 }

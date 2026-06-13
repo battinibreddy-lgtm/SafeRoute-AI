@@ -111,6 +111,31 @@ export default function LeafletMap({
   const [spots, setSpots] = useState<any[]>([]);
   const [selectedRisk, setSelectedRisk] = useState<any>(null);
 
+  const translateRiskLevel = (level: string) => {
+    const normalized = level.toLowerCase();
+
+    if (normalized.includes("low")) return t("safe");
+    if (normalized.includes("medium")) return t("moderate");
+    if (normalized.includes("high")) return t("dangerous");
+
+    return level;
+  };
+
+  const translateReason = (reason: string) => {
+    const reasonMap: Record<string, string> = {
+      "Fallback mode active": "reason_fallback_mode_active",
+      "Low accident density": "reason_low_accident_density",
+      "Stable traffic": "reason_stable_traffic",
+      "Moderate risk zone": "reason_moderate_risk_zone",
+      "Some congestion": "reason_some_congestion",
+      "Frequent accidents": "reason_frequent_accidents",
+      "Dangerous junction": "reason_dangerous_junction",
+    };
+
+    const key = reasonMap[reason];
+    return key ? t(key) : reason;
+  };
+
   // -----------------------------
   // LOAD BLACKSPOTS
   // -----------------------------
@@ -207,7 +232,7 @@ export default function LeafletMap({
             <br />
             {t("score")}: {selectedRisk.risk_score}
             <br />
-            {t("level")}: {selectedRisk.risk_level}
+            {t("level")}: {translateRiskLevel(selectedRisk.risk_level)}
 
             <hr />
 
@@ -216,7 +241,7 @@ export default function LeafletMap({
             <ul>
               {selectedRisk.reasons?.map(
                 (reason: string, index: number) => (
-                  <li key={index}>{reason}</li>
+                  <li key={index}>{translateReason(reason)}</li>
                 )
               )}
             </ul>

@@ -47,5 +47,12 @@
 
   "safe": "SAFE 🟢",
   "moderate": "MODERATE 🟡",
-  "dangerous": "DANGEROUS 🔴"
+  "dangerous": "DANGEROUS 🔴",
+  "reason_fallback_mode_active": "Fallback mode active",
+  "reason_low_accident_density": "Low accident density",
+  "reason_stable_traffic": "Stable traffic",
+  "reason_moderate_risk_zone": "Moderate risk zone",
+  "reason_some_congestion": "Some congestion",
+  "reason_frequent_accidents": "Frequent accidents",
+  "reason_dangerous_junction": "Dangerous junction"
 }

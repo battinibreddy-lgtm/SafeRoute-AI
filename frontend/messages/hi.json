@@ -47,5 +47,12 @@
 
   "safe": "सुरक्षित 🟢",
   "moderate": "मध्यम 🟡",
-  "dangerous": "खतरनाक 🔴"
+  "dangerous": "खतरनाक 🔴",
+  "reason_fallback_mode_active": "Fallback मोड सक्रिय है",
+  "reason_low_accident_density": "दुर्घटना घनत्व कम है",
+  "reason_stable_traffic": "ट्रैफिक स्थिर है",
+  "reason_moderate_risk_zone": "मध्यम जोखिम क्षेत्र",
+  "reason_some_congestion": "कुछ ट्रैफिक भीड़ है",
+  "reason_frequent_accidents": "बार-बार दुर्घटनाएँ होती हैं",
+  "reason_dangerous_junction": "खतरनाक चौराहा"
 }
