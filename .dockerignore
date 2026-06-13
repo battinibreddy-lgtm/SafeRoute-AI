@@ -19,3 +19,5 @@ backend/.venv
 .env
 .env.*
 !.env.example
+
+!backend/ml/model.pkl

@@ -16,6 +16,7 @@ node_modules/
 
 # Models
 *.pkl
+!backend/ml/model.pkl
 
 # Environment
 .env
