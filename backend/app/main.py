@@ -9,6 +9,8 @@ from fastapi import FastAPI, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from app.api.agent import router as agent_router
+
 
 def parse_cors_origins():
     origins = os.getenv(
@@ -22,6 +24,7 @@ def parse_cors_origins():
 # App setup
 # ---------------------------
 app = FastAPI(title="SafeRoute AI", version="0.2.1")
+app.include_router(agent_router)
 
 # ---------------------------
 # CORS (React frontend)
