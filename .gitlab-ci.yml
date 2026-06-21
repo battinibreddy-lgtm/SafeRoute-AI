@@ -1,96 +1,74 @@
 stages:
-  - lint
-  - format
-  - type_check
   - quality
   - security
   - test
-  - coverage
 
-image: python:3.12
+.python-job:
+  image: python:3.12
+  before_script:
+    - python -m pip install --upgrade pip
+    - python -m pip install -r requirements-dev.txt
+  cache:
+    key: python-3.12
+    paths:
+      - .cache/pip
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
-before_script:
-  - python -V
-  - pip install --upgrade pip
-  - pip install ruff mypy pytest pytest-cov pip-audit vulture bandit pylint flake8 semgrep pyupgrade
+.frontend-job:
+  image: node:20
+  before_script:
+    - npm --prefix frontend ci
+  cache:
+    key:
+      files:
+        - frontend/package-lock.json
+    paths:
+      - .npm/
+  variables:
+    npm_config_cache: "$CI_PROJECT_DIR/.npm"
 
-# -------------------
-# LINT
-# -------------------
-lint:
-  stage: lint
+python-quality:
+  extends: .python-job
+  stage: quality
   script:
     - ruff check .
-
-# -------------------
-# FORMAT
-# -------------------
-format:
-  stage: format
-  script:
     - ruff format --check .
-
-# -------------------
-# TYPE CHECK
-# -------------------
-type_check:
-  stage: type_check
-  script:
     - mypy .
+    - vulture backend/app backend/ml/train.py tests --min-confidence 80
 
-# -------------------
-# QUALITY TOOLS
-# -------------------
-vulture:
+frontend-quality:
+  extends: .frontend-job
   stage: quality
   script:
-    - vulture backend/
+    - npm --prefix frontend run format:check
+    - npm --prefix frontend run lint
+    - npm --prefix frontend run typecheck
+    - npm --prefix frontend run dead-code
 
-pylint:
-  stage: quality
-  script:
-    - pylint backend
-
-flake8:
-  stage: quality
-  script:
-    - flake8 backend
-
-pyupgrade:
-  stage: quality
-  script:
-    - pyupgrade backend/**/*.py
-
-# -------------------
-# SECURITY
-# -------------------
-bandit:
+python-security:
+  extends: .python-job
   stage: security
   script:
-    - bandit -r backend
+    - bandit -c bandit.yaml -r backend
+    - pip-audit -r backend/requirements.txt
+    - python scripts/check_licenses.py
 
-semgrep:
+frontend-security:
+  extends: .frontend-job
   stage: security
   script:
-    - semgrep --config=auto backend
+    - npm --prefix frontend run audit
 
-dependency_audit:
-  stage: security
-  script:
-    - pip-audit
-
-# -------------------
-# TESTS
-# -------------------
-test:
+python-tests:
+  extends: .python-job
   stage: test
   script:
     - pytest -q
+    - pytest --cov=backend --cov-report=term-missing
 
-# -------------------
-# COVERAGE
-# -------------------
-coverage:
-  stage: coverage
+frontend-tests:
+  extends: .frontend-job
+  stage: test
   script:
-    - pytest --cov=. --cov-report=term --cov-fail-under=80
+    - npm --prefix frontend test

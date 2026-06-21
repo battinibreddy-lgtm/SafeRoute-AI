@@ -1,0 +1,8 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreDependencies": ["leaflet.heat", "next-intl"],
+  "ignoreFiles": ["components/leaflet-icon.ts"],
+  "ignoreIssues": {
+    "src/lib/api.ts": ["exports"]
+  }
+}

@@ -1,39 +1,101 @@
+default_install_hook_types: [pre-commit, pre-push]
+
 repos:
-  # -------------------------
-  # BASIC FILE CLEANUP
-  # -------------------------
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+      - id: check-json
+      - id: check-toml
       - id: check-added-large-files
       - id: detect-private-key
 
-  # -------------------------
-  # LINT + FORMAT (Ruff = modern standard)
-  # -------------------------
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+    rev: v0.12.12
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
 
-  # -------------------------
-  # TYPE CHECKING
-  # -------------------------
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.2
+    rev: v1.17.1
     hooks:
       - id: mypy
         additional_dependencies: [types-requests]
 
-  # -------------------------
-  # SECURITY CHECKS
-  # -------------------------
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
       - id: detect-secrets
+
+  - repo: local
+    hooks:
+      - id: frontend-format
+        name: frontend format
+        entry: npm --prefix frontend run format:check
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+      - id: frontend-lint
+        name: frontend lint
+        entry: npm --prefix frontend run lint
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+      - id: frontend-typecheck
+        name: frontend type check
+        entry: npm --prefix frontend run typecheck
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      - id: python-tests
+        name: python unit tests
+        entry: python -m pytest -q
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: python-dead-code
+        name: python dead-code check
+        entry: vulture backend/app backend/ml/train.py tests --min-confidence 80
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: python-security
+        name: python security scan
+        entry: bandit -c bandit.yaml -r backend
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: python-audit
+        name: python dependency audit
+        entry: pip-audit -r backend/requirements.txt
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: frontend-tests
+        name: frontend unit tests
+        entry: npm --prefix frontend test
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: frontend-dead-code
+        name: frontend dead-code check
+        entry: npm --prefix frontend run dead-code
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: frontend-audit
+        name: frontend dependency audit
+        entry: npm --prefix frontend run audit
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: dependency-licenses
+        name: dependency license compliance
+        entry: python scripts/check_licenses.py
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

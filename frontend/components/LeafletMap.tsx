@@ -31,8 +31,7 @@ const getRiskIcon = (level: string) => {
 
   return new L.Icon({
     iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-    shadowUrl:
-      "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
     iconSize: [25, 41],
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
@@ -85,10 +84,7 @@ function RouteFit({ route }: any) {
   useEffect(() => {
     if (!route || route.length === 0) return;
 
-    const bounds = route.map((p: any) => [
-      Number(p.lat),
-      Number(p.lon),
-    ]);
+    const bounds = route.map((p: any) => [Number(p.lat), Number(p.lon)]);
 
     map.fitBounds(bounds, {
       padding: [50, 50],
@@ -101,11 +97,7 @@ function RouteFit({ route }: any) {
 // -----------------------------
 // MAIN COMPONENT
 // -----------------------------
-export default function LeafletMap({
-  route = [],
-  startName,
-  endName,
-}: any) {
+export default function LeafletMap({ route = [], startName, endName }: any) {
   const { t } = useI18n();
 
   const [spots, setSpots] = useState<any[]>([]);
@@ -202,10 +194,7 @@ export default function LeafletMap({
       {spots.map((spot) => (
         <LeafletMarker
           key={spot.id}
-          position={[
-            Number(spot.latitude),
-            Number(spot.longitude),
-          ]}
+          position={[Number(spot.latitude), Number(spot.longitude)]}
           icon={getRiskIcon("MEDIUM")}
         >
           <LeafletPopup>
@@ -221,10 +210,7 @@ export default function LeafletMap({
       {/* AI RISK MARKER */}
       {selectedRisk && (
         <LeafletMarker
-          position={[
-            selectedRisk.latlng.lat,
-            selectedRisk.latlng.lng,
-          ]}
+          position={[selectedRisk.latlng.lat, selectedRisk.latlng.lng]}
           icon={getRiskIcon(selectedRisk.risk_level)}
         >
           <LeafletPopup>
@@ -233,17 +219,12 @@ export default function LeafletMap({
             {t("score")}: {selectedRisk.risk_score}
             <br />
             {t("level")}: {translateRiskLevel(selectedRisk.risk_level)}
-
             <hr />
-
             <b>{t("reasons")}:</b>
-
             <ul>
-              {selectedRisk.reasons?.map(
-                (reason: string, index: number) => (
-                  <li key={index}>{translateReason(reason)}</li>
-                )
-              )}
+              {selectedRisk.reasons?.map((reason: string, index: number) => (
+                <li key={index}>{translateReason(reason)}</li>
+              ))}
             </ul>
           </LeafletPopup>
         </LeafletMarker>
@@ -252,10 +233,7 @@ export default function LeafletMap({
       {/* START MARKER */}
       {route.length > 0 && (
         <LeafletMarker
-          position={[
-            Number(route[0].lat),
-            Number(route[0].lon),
-          ]}
+          position={[Number(route[0].lat), Number(route[0].lon)]}
           icon={getRouteIcon("🟢")}
         >
           <LeafletPopup>
@@ -286,10 +264,7 @@ export default function LeafletMap({
       {/* ROUTE LINE */}
       {route.length > 0 && (
         <LeafletPolyline
-          positions={route.map((p: any) => [
-            Number(p.lat),
-            Number(p.lon),
-          ])}
+          positions={route.map((p: any) => [Number(p.lat), Number(p.lon)])}
           color="blue"
           weight={6}
         />

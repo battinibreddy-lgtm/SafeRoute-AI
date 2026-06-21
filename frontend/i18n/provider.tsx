@@ -14,18 +14,18 @@ type I18nContextType = {
 const I18nContext = createContext<I18nContextType | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
- const [locale, setLocale] = useState<Locale>("en");
+  const [locale, setLocale] = useState<Locale>("en");
 
-useEffect(() => {
-  const saved = localStorage.getItem("locale") as Locale | null;
-  if (saved) {
-    setLocale(saved);
-  }
-}, []);
+  useEffect(() => {
+    const saved = localStorage.getItem("locale") as Locale | null;
+    if (saved) {
+      setLocale(saved);
+    }
+  }, []);
 
-useEffect(() => {
-  localStorage.setItem("locale", locale);
-}, [locale]);
+  useEffect(() => {
+    localStorage.setItem("locale", locale);
+  }, [locale]);
   const [messages, setMessages] = useState<Messages>({});
 
   useEffect(() => {

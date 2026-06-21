@@ -1,0 +1,11 @@
+-r backend/requirements.txt
+
+bandit==1.8.6
+mypy==1.17.1
+pip-audit==2.9.0
+pre-commit==4.3.0
+pytest==8.4.2
+pytest-cov==7.0.0
+ruff==0.12.12
+types-requests==2.32.4.20250913
+vulture==2.14

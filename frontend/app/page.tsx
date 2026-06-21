@@ -44,8 +44,7 @@ export default function Home() {
   const [end, setEnd] = useState("");
   const [result, setResult] = useState<RouteResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [aiSettings, setAISettings] =
-    useState<AISettings>(defaultAISettings);
+  const [aiSettings, setAISettings] = useState<AISettings>(defaultAISettings);
   const [showAISettings, setShowAISettings] = useState(false);
 
   useEffect(() => {
@@ -82,7 +81,7 @@ export default function Home() {
     setAISettings(settings);
     window.localStorage.setItem(
       "saferoute-ai-settings",
-      JSON.stringify(settings)
+      JSON.stringify(settings),
     );
   };
 
@@ -171,7 +170,7 @@ export default function Home() {
   // 🌍 Geocoding (OpenStreetMap)
   const geocodeLocation = async (place: string) => {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${place}`
+      `https://nominatim.openstreetmap.org/search?format=json&q=${place}`,
     );
 
     const data = await res.json();
@@ -261,11 +260,7 @@ export default function Home() {
     <div style={{ display: "flex", height: "100vh" }}>
       {/* 🗺 MAP SIDE */}
       <div style={{ flex: 1 }}>
-        <MapView
-          route={result?.path || []}
-          startName={start}
-          endName={end}
-        />
+        <MapView route={result?.path || []} startName={start} endName={end} />
       </div>
 
       {/* 📊 RIGHT PANEL */}
@@ -283,9 +278,7 @@ export default function Home() {
         {/* 🌍 Language */}
         <div style={{ marginBottom: "15px" }}>
           <select
-            onChange={(e) =>
-              setLocale(e.target.value as "en" | "hi" | "te")
-            }
+            onChange={(e) => setLocale(e.target.value as "en" | "hi" | "te")}
             style={{ padding: "8px", width: "100%" }}
           >
             <option value="en">English</option>
@@ -448,8 +441,7 @@ export default function Home() {
             </p>
 
             <p>
-              <b>{t("status")}:</b>{" "}
-              {t(getRiskStatusKey(result.risk_score))}
+              <b>{t("status")}:</b> {t(getRiskStatusKey(result.risk_score))}
             </p>
 
             <p>
