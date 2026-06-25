@@ -1,1 +1,9 @@
-rules: []
+rules:
+  - id: python-dangerous-dynamic-execution
+    languages:
+      - python
+    message: Avoid dynamic execution of untrusted Python code.
+    severity: ERROR
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)

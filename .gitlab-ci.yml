@@ -1,9 +1,9 @@
 stages:
   - lint
-  - quality
-  - security
+  - format
+  - type_check
   - test
-  - build
+  - coverage
 
 .python-job:
   image: python:3.12
@@ -34,65 +34,77 @@ python-lint:
   extends: .python-job
   stage: lint
   script:
+    - python -m pip install pylint==4.0.5
     - ruff check .
-    - ruff format --check .
+    - pylint --rcfile=.pylintrc --fail-under=9.0 backend tests
+    - flake8 --extend-ignore=E402 backend tests
+    - vulture backend/app backend/ml/train.py tests --min-confidence 80
+    - bandit -c bandit.yaml -r backend
+    - semgrep scan --config=.semgrep.yml --error backend
+    - git ls-files '*.py' | xargs pyupgrade --py312-plus
 
 frontend-lint:
   extends: .frontend-job
   stage: lint
   script:
-    - npm --prefix frontend run format:check
     - npm --prefix frontend run lint
-
-python-quality:
-  extends: .python-job
-  stage: quality
-  script:
-    - mypy .
-    - vulture backend/app backend/ml/train.py tests --min-confidence 80
-
-frontend-quality:
-  extends: .frontend-job
-  stage: quality
-  script:
-    - npm --prefix frontend run typecheck
     - npm --prefix frontend run dead-code
 
-python-security:
+format:
   extends: .python-job
-  stage: security
+  stage: format
   script:
-    - bandit -c bandit.yaml -r backend
-    - pip-audit -r backend/requirements.txt
-    - python scripts/check_licenses.py
+    - ruff format --check .
 
-frontend-security:
+frontend-format:
   extends: .frontend-job
-  stage: security
+  stage: format
   script:
-    - npm --prefix frontend run audit
+    - npm --prefix frontend run format:check
+
+type_check:
+  extends: .python-job
+  stage: type_check
+  script:
+    - mypy .
+
+frontend-type-check:
+  extends: .frontend-job
+  stage: type_check
+  script:
+    - npm --prefix frontend run typecheck
 
 python-tests:
   extends: .python-job
   stage: test
   script:
     - pytest -q
-    - pytest --cov=backend --cov-report=term-missing
+    - pip-audit -r backend/requirements.txt
+    - python scripts/check_licenses.py
 
 frontend-tests:
   extends: .frontend-job
   stage: test
   script:
     - npm --prefix frontend test
+    - npm --prefix frontend run audit
 
-backend-build:
+coverage:
   extends: .python-job
-  stage: build
+  stage: coverage
   script:
-    - python -m compileall -q backend
+    - pytest --cov=backend --cov-report=term-missing --cov-report=xml
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - coverage.xml
+    expire_in: 1 week
 
 frontend-build:
   extends: .frontend-job
-  stage: build
+  stage: coverage
   script:
     - npm --prefix frontend run build

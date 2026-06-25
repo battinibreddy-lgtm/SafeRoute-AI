@@ -1,11 +1,14 @@
 -r backend/requirements.txt
 
 bandit==1.8.6
+flake8==7.3.0
 mypy==1.17.1
 pip-audit==2.9.0
 pre-commit==4.3.0
 pytest==8.4.2
 pytest-cov==7.0.0
+pyupgrade==3.21.2
 ruff==0.12.12
+semgrep==1.165.0
 types-requests==2.32.4.20250913
 vulture==2.14
