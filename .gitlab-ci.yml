@@ -40,8 +40,13 @@ python-lint:
     - flake8 --extend-ignore=E402 backend tests
     - vulture backend/app backend/ml/train.py tests --min-confidence 80
     - bandit -c bandit.yaml -r backend
-    - semgrep scan --config=.semgrep.yml --error backend
     - git ls-files '*.py' | xargs pyupgrade --py312-plus
+
+semgrep:
+  image: semgrep/semgrep:1.165.0
+  stage: lint
+  script:
+    - semgrep scan --config=.semgrep.yml --error backend
 
 frontend-lint:
   extends: .frontend-job
