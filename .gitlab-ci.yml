@@ -1,7 +1,9 @@
 stages:
+  - lint
   - quality
   - security
   - test
+  - build
 
 .python-job:
   image: python:3.12
@@ -28,12 +30,24 @@ stages:
   variables:
     npm_config_cache: "$CI_PROJECT_DIR/.npm"
 
+python-lint:
+  extends: .python-job
+  stage: lint
+  script:
+    - ruff check .
+    - ruff format --check .
+
+frontend-lint:
+  extends: .frontend-job
+  stage: lint
+  script:
+    - npm --prefix frontend run format:check
+    - npm --prefix frontend run lint
+
 python-quality:
   extends: .python-job
   stage: quality
   script:
-    - ruff check .
-    - ruff format --check .
     - mypy .
     - vulture backend/app backend/ml/train.py tests --min-confidence 80
 
@@ -41,8 +55,6 @@ frontend-quality:
   extends: .frontend-job
   stage: quality
   script:
-    - npm --prefix frontend run format:check
-    - npm --prefix frontend run lint
     - npm --prefix frontend run typecheck
     - npm --prefix frontend run dead-code
 
@@ -72,3 +84,15 @@ frontend-tests:
   stage: test
   script:
     - npm --prefix frontend test
+
+backend-build:
+  extends: .python-job
+  stage: build
+  script:
+    - python -m compileall -q backend
+
+frontend-build:
+  extends: .frontend-job
+  stage: build
+  script:
+    - npm --prefix frontend run build
